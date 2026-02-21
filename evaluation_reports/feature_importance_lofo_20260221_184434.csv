@@ -1,0 +1,5 @@
+held_out_family,top1,top1_imp,top2,top2_imp,top3,top3_imp,top4,top4_imp,top5,top5_imp
+conti,total_disk_writes,0.058535903615652404,disk_write_delta_mean,0.05702099917414153,ata_variance,0.03804382287801877,mem_write_delta_mean,0.02732180537700451,mem_entropy_avg,0.008120062335391854
+lockbit,mem_write_delta_mean,0.059251562740818144,total_disk_writes,0.04942656076483441,disk_write_delta_mean,0.0380035067112142,ata_variance,0.025475405496694976,mem_entropy_avg,0.013300878138943465
+revil,mem_write_delta_mean,0.06794013926331421,total_disk_writes,0.040045564496991023,disk_write_delta_mean,0.03504002814208111,ata_variance,0.03124911126294015,mem_entropy_avg,0.01411903715962327
+ryuk,mem_write_delta_mean,0.059559638594781604,total_disk_writes,0.04591186070703844,disk_write_delta_mean,0.038936598348019345,ata_variance,0.030141772040851268,mem_entropy_avg,0.013581416546856791

@@ -1,0 +1,22 @@
+# ignore raw data and large artifacts
+/data/raw/
+/data/processed/*.h5
+/data/processed/*.keras
+/data/processed/*.npy
+/models/*.h5
+/models/*.keras
+/models/*.pkl
+/models/*.txt
+/models/run_info*.json
+
+# Python artifacts
+__pycache__/
+*.pyc
+
+# environment
+venv/
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
