@@ -47,6 +47,7 @@ ransomware_module/
 ├── features/                   # actual feature engineering code
 ├── utils/                      # helper utilities
 ├── evaluation_reports/         # outputs from evaluation runs
+├── honeypot/                   # filesystem honeypot modules for early warning
 ├── .github/workflows/ci.yml    # GitHub Actions runs tests automatically
 ├── README.md                   # this file
 └── requirements.txt            # Python packages you need
@@ -119,6 +120,58 @@ python scripts/train_model.py --hold ""
 python scripts/train_model.py --help
 ```
 
+---
+
+## 🛡️ Filesystem Honeypot Architecture
+
+A lightweight honeypot module has been added to the repository to provide
+an early‑warning layer that complements the LSTM ransomware detector. It
+is designed to be:
+
+* **Lightweight:** no administrator privileges, cross‑platform, low CPU
+  overhead.
+* **Research‑defensible:** simple scoring formula, JSONL logs, easy to
+  document in papers.
+* **Easily integrated:** fires structured alerts that can be passed to the
+  model via `models.predict_lstm.predict_dataframe` or written to
+  `data/processed/live_honeypot_events.csv` for batch inference.
+
+The code lives under `honeypot/` and consists of five components:
+
+1. **decoy_generator.py** – creates configurable bait files with
+   high‑entropy content.
+2. **monitor.py** – watches for modifications, deletions and renames using
+   `watchdog` and buffers events for scoring.
+3. **entropy.py** – Shannon entropy utilities used to spot sudden surprises
+   (e.g. encryption).
+4. **scoring.py** – computes a suspicion score from event counts, entropy
+   delta, and write rate; triggers an alert when the score exceeds a
+   threshold (default 0.7).
+5. **honeypot_manager.py** – a CLI wrapper that bootstraps decoys and the
+   monitor, periodically evaluates events, logs alerts to
+   `logs/honeypot_events.jsonl`, and optionally calls the LSTM predictor.
+
+A unit test file `tests/test_honeypot.py` exercises the scoring logic and
+simulates basic file‑system activity, and `watchdog` was added to
+`requirements.txt`.
+
+Running the manager is as simple as::
+
+    python honeypot/honeypot_manager.py --path /some/dir --decoys 10
+
+This architecture gives you an early warning signal that is lightweight,
+easily understood, and can be combined with the ML pipeline for
+higher‑confidence detections.
+
+For research‑grade validation we even include a large Monte‑Carlo harness
+(`tests/monte_carlo_validation.py`) that runs hundreds of randomized benign
+and ransomware sessions to quantify false‑positive/true‑positive rates,
+detection latency, score/probability distributions, and provides a
+reproducible report.  Invoke it with `--seed 42` to make the runs deterministic
+and add the numbers to your paper.
+
+
+### How to use the Model for Predictions
 ---
 
 ## 📦 Using the Model for Predictions

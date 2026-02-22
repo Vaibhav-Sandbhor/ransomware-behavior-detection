@@ -3,7 +3,44 @@ import numpy as np
 import pandas as pd
 import argparse
 import joblib
-from tensorflow.keras.models import load_model
+
+# TensorFlow is imported lazily inside load_detector so that modules using the
+# prediction API (including unit tests) won't crash simply by importing this
+# file.  Some CI environments or systems without GPU drivers may raise
+# mysterious access violations at import time.  We also provide a quick
+# external check to see if ``tensorflow`` can be imported in a separate
+# process; this allows callers to bail out before the host process attempts to
+# load the native library.
+
+
+def _tensorflow_available() -> bool:
+    """Return ``True`` if a fresh Python process can import TensorFlow.
+
+    This uses ``subprocess`` instead of attempting the import in the current
+    process because certain TensorFlow installation problems cause the interpreter
+    to crash outright (access violation).  If the child process crashes or the
+    import fails, we treat TensorFlow as unavailable.
+    """
+    import subprocess, sys
+
+    code = "import tensorflow"
+    try:
+        subprocess.check_call([sys.executable, "-c", code], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+        return True
+    except Exception:
+        return False
+
+
+def _import_tf():
+    global load_model
+    # we expect the caller to have already verified availability; do a
+    # secondary attempt here for safety.
+    try:
+        from tensorflow.keras.models import load_model as _lm
+    except Exception as exc:
+        raise ImportError("TensorFlow could not be imported") from exc
+    load_model = _lm
+    return load_model
 
 # compute project root so relative paths work from anywhere
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -14,6 +51,11 @@ DEFAULT_DATA_PATH = os.path.join(ROOT, "data", "processed", "ransomware_features
 
 def load_detector(model_path=None, scaler_path=None):
     """Return a tuple (model, scaler)."""
+    # avoid importing TensorFlow directly in this process if it's not usable.
+    if not _tensorflow_available():
+        raise ImportError("TensorFlow environment not available for model loading")
+    _import_tf()
+
     model_path = model_path or DEFAULT_MODEL_PATH
     scaler_path = scaler_path or DEFAULT_SCALER_PATH
     if not os.path.exists(model_path):
