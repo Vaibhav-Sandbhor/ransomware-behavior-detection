@@ -1,0 +1,857 @@
+
+
+/* =========================
+   GLOBAL THEME VARIABLES
+========================= */
+:root {
+  --bg-main: #0b1220;
+  --bg-panel: #0f172a;
+  --bg-panel-soft: #020617;
+  --border-soft: #1e293b;
+
+  --text-primary: #e5e7eb;
+  --text-secondary: #94a3b8;
+
+  --red: #dc2626;
+  --orange: #f59e0b;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --green: #22c55e;
+}
+
+/* =========================
+   RESET
+========================= */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+}
+
+/* =========================
+   MAIN LAYOUT
+========================= */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr 340px;
+  height: 100vh;
+  background: radial-gradient(circle at top, #0b1220, #020617);
+  overflow: hidden;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+.sidebar {
+  background: #020617;
+  border-right: 1px solid var(--border-soft);
+  padding: 20px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--blue);
+  margin-bottom: 30px;
+}
+
+.sidebar ul {
+  padding: 0;
+}
+
+.sidebar li {
+  list-style: none;
+  margin-bottom: 10px;
+}
+
+.sidebar a {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: 0.2s;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+  background: var(--bg-panel);
+  color: white;
+}
+
+/* =========================
+   CENTER CONTENT
+========================= */
+.dashboard-main {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.page-title {
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.page-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 25px;
+}
+
+.green {
+  color: var(--green);
+}
+/* =========================
+   SUMMARY GRID
+========================= */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* =========================
+   SUMMARY CARD – CLEAN SIEM STYLE
+========================= */
+.summary-card {
+  background: #020617;
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-soft);
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+/* LEFT COLOR ACCENT */
+.summary-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 3px;
+}
+
+/* HEADER */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* TITLE */
+.card-title {
+  font-size: 11.5px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ICON */
+.card-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* VALUE */
+.card-value {
+  font-size: 30px;
+  font-weight: 700;
+  margin: 6px 0 2px;
+  line-height: 1;
+}
+
+/* SUB TEXT */
+.card-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* =========================
+   COLOR VARIANTS (INSIDE BOX)
+========================= */
+
+/* 🔴 RANSOMWARE */
+.summary-card.danger {
+  background: linear-gradient(
+    180deg,
+    rgba(220, 38, 38, 0.08),
+    #020617
+  );
+}
+.summary-card.danger::before {
+  background: var(--red);
+}
+.card-icon.danger,
+.card-value.danger {
+  color: var(--red);
+}
+
+/* 🟠 PORT SCAN */
+.summary-card.warning {
+  background: linear-gradient(
+    180deg,
+    rgba(245, 158, 11, 0.08),
+    #020617
+  );
+}
+.summary-card.warning::before {
+  background: var(--orange);
+}
+.card-icon.warning,
+.card-value.warning {
+  color: var(--orange);
+}
+
+/* 🔵 HONEYPOT */
+.summary-card.info {
+  background: linear-gradient(
+    180deg,
+    rgba(59, 130, 246, 0.08),
+    #020617
+  );
+}
+.summary-card.info::before {
+  background: var(--blue);
+}
+.card-icon.info,
+.card-value.info {
+  color: var(--blue);
+}
+
+/* 🟣 DARK WEB */
+.summary-card.purple {
+  background: linear-gradient(
+    180deg,
+    rgba(168, 85, 247, 0.08),
+    #020617
+  );
+}
+.summary-card.purple::before {
+  background: var(--purple);
+}
+.card-icon.purple,
+.card-value.purple {
+  color: var(--purple);
+}
+.summary-card:hover {
+  background-blend-mode: lighten;
+}
+
+
+
+/* =========================
+   CHARTS
+========================= */
+/* =========================
+   CHARTS (COMPACT)
+========================= */
+.charts {
+  margin-bottom: 25px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.chart-card {
+  background: var(--bg-panel-soft);
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-soft);
+  height: 260px; /* 🔥 fixed height */
+}
+
+.chart-card h3 {
+  font-size: 14px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+
+/* =========================
+   THREAT TABLE (SCROLLABLE)
+========================= */
+.table-section {
+  margin-bottom: 25px;
+  max-height: 260px; /* 🔥 controls table height */
+  overflow-y: auto;
+  border-radius: 14px;
+}
+
+.table-section table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-panel-soft);
+}
+
+.table-section thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-panel);
+  z-index: 1;
+}
+
+/* =========================
+   ALERTS PANEL (RIGHT)
+========================= */
+/* =========================
+   ALERTS PANEL (FIXED + SCROLL)
+========================= */
+.alerts {
+  background: #020617;
+  border-left: 1px solid var(--border-soft);
+  padding: 20px;
+  height: 100vh;       /* 🔥 full height */
+  overflow-y: auto;    /* 🔥 internal scroll */
+}
+
+.alert {
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: var(--bg-panel);
+  font-size: 12.5px;
+}
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 10px;
+}
+
+/* =========================
+   ALERT SEVERITY COLORS
+========================= */
+.alert {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  background: var(--bg-panel);
+  border-left: 4px solid transparent;
+}
+
+/* CRITICAL – RANSOMWARE */
+.alert.critical {
+  border-left-color: var(--red);
+  background: rgba(220, 38, 38, 0.12);
+  box-shadow: 0 0 15px rgba(220, 38, 38, 0.25);
+}
+
+/* HIGH – PORT SCAN / BRUTE FORCE */
+.alert.high {
+  border-left-color: var(--orange);
+  background: rgba(245, 158, 11, 0.12);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+}
+
+/* MEDIUM – DARK WEB / SUSPICIOUS */
+.alert.medium {
+  border-left-color: var(--blue);
+  background: rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+}
+
+/* LOW – INFORMATIONAL */
+.alert.low {
+  border-left-color: var(--purple);
+  background: rgba(168, 85, 247, 0.12);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.25);
+}
+
+.alert-time {
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.alert-msg {
+  flex: 1;
+}
+
+/* =========================
+   ML THREAT ANALYSIS (MODERN)
+========================= */
+.ml-section {
+  margin-bottom: 30px;
+}
+
+.section-title {
+  font-size: 16px;
+  margin-bottom: 14px;
+}
+
+/* GRID */
+.ml-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+/* CARD */
+.ml-card {
+  background: #020617;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 14px;
+  height: 260px;               /* 🔥 equal height */
+  display: flex;
+  flex-direction: column;
+}
+
+/* CARD HEADER */
+.ml-card-header {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+/* FOOTER */
+.ml-footer {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.ml-status {
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.ml-status.danger {
+  color: var(--red);
+}
+
+/* =================================================
+   RESPONSIVE ADDITIONS (NON-DESTRUCTIVE)
+   Keeps ALL existing styles intact
+================================================= */
+
+/* ---------- LARGE TABLET & SMALL LAPTOP ---------- */
+@media (max-width: 1200px) {
+  .dashboard-layout {
+    grid-template-columns: 220px 1fr;
+  }
+
+  /* Hide alerts panel, NOT alert styles */
+  .alerts {
+    display: none;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ---------- TABLET ---------- */
+@media (max-width: 900px) {
+  .chart-grid,
+  .ml-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card,
+  .ml-card {
+    height: 240px;
+  }
+}
+
+/* ---------- MOBILE ---------- */
+@media (max-width: 768px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .alerts {
+    display: none;
+  }
+
+  .dashboard-main {
+    padding: 16px;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .page-sub {
+    font-size: 13px;
+  }
+
+  /* Tables scroll instead of breaking */
+  .table-section {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 600px;
+  }
+}
+.log-block {
+  background: #020617;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 12.5px;
+  color: #cbd5f5;
+  white-space: pre-wrap;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+
+/* =========================
+   INVESTIGATION REPORT UI
+========================= */
+
+.report-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* HEADER */
+.report-header h1 {
+  font-size: 20px;
+  margin-bottom: 5px;
+}
+
+.report-header p {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* SUMMARY BOX */
+.report-summary {
+  display: flex;
+  justify-content: space-between;
+  background: #020617;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.report-summary div {
+  display: flex;
+  flex-direction: column;
+}
+
+.report-summary .label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.report-summary .value {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* CARD */
+.report-card {
+  background: #020617;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.report-card h2 {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+/* TABLE */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-table th {
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 10px;
+}
+
+.report-table td {
+  padding: 10px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 13px;
+}
+
+/* CVSS STYLE */
+.cvss {
+  font-weight: 600;
+  color: var(--orange);
+}
+
+/* BADGE */
+.badge {
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge.low {
+  background: rgba(34,197,94,0.12);
+  color: var(--green);
+}
+
+/* RAW LOG */
+.log-block {
+  background: #0f172a;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #cbd5f5;
+  max-height: 250px;
+  overflow-y: auto;
+}
+/* =========================
+   TOPBAR (SECUREWATCH STYLE)
+========================= */
+
+.topbar {
+  height: 60px;
+  background: rgba(2, 6, 23, 0.85);
+  border: 1px solid rgba(30, 41, 59, 0.6);
+  border-radius: 14px;
+  padding: 0 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 10px;
+
+  backdrop-filter: blur(12px);
+}
+
+/* LEFT BRAND */
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-icon {
+  font-size: 18px;
+  color: var(--blue);
+}
+
+.brand-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: var(--text-primary);
+}
+
+/* CENTER TEXT */
+.topbar-center {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* RIGHT ICONS */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.top-icon {
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: 0.2s;
+}
+
+.top-icon:hover {
+  color: white;
+}
+
+/* PROFILE */
+.profile-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--border-soft);
+}
+@media (max-width: 768px) {
+  .topbar-center {
+    display: none; /* hide welcome text on mobile */
+  }
+}
+
+/* =========================
+   APP WRAPPER (TOPBAR + GRID)
+========================= */
+.app-wrapper {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Topbar stays fixed */
+.topbar {
+  height: 60px;
+  flex-shrink: 0;
+}
+
+/* Dashboard grid fills remaining space */
+.dashboard-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 240px 1fr 340px;
+  background: radial-gradient(circle at top, #0b1220, #020617);
+  overflow: hidden;
+}
+
+/* =========================
+   GLOBAL TOPBAR (FULL WIDTH)
+========================= */
+.topbar {
+  width: 100%;
+  height: 60px;
+  background: rgba(2, 6, 23, 0.92);
+
+  border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 22px;
+  backdrop-filter: blur(14px);
+}
+
+/* LEFT */
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: white;
+}
+
+/* CENTER */
+.topbar-center {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* RIGHT */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.top-icon {
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.top-icon:hover {
+  color: white;
+}
+
+.profile-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--border-soft);
+}
+@media (max-width: 768px) {
+  .topbar-center {
+    display: none;
+  }
+
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar,
+  .alerts {
+    display: none;
+  }
+}
+
+.scan-btn {
+  padding: 10px 20px;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.scan-btn:hover {
+  opacity: 0.9;
+}
+
+.ml-result {
+  padding: 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.ml-result.safe {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid #22c55e;
+  color: #22c55e;
+}
+
+.ml-result.danger {
+  background: rgba(220, 38, 38, 0.15);
+  border: 1px solid #dc2626;
+  color: #dc2626;
+}
+
+
