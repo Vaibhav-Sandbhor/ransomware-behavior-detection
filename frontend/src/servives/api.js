@@ -19,5 +19,5 @@ export const scanRansomware = async (samplePath) => {
     }),
   });
 
-  return await response.json();
+  return response.json();
 };

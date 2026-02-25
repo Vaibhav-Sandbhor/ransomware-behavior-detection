@@ -8,9 +8,9 @@ function RansomwareDetails() {
  const handleScan = async () => {
   setLoading(true);
 
-  const result = await scanRansomware(
-    "D:/Projects React/CyberSIEM/backend/data/raw/ransomware/conti/conti_01"
-  );
+ const result = await scanRansomware(
+  "C:/Users/Svaib/OneDrive/Desktop/CyberSIEM/data/raw/ransomware/conti/conti_01"
+);
 
   setResult(result);
   setLoading(false);
