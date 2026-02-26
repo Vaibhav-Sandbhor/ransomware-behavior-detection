@@ -1,8 +1,25 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { fetchRansomwarePredictions, fetchHoneypotLog } from "../servives/api";
 
 const SummaryCards = ({ ransomwareCount }) => {
   const navigate = useNavigate();
+  const [liveRansomware, setLiveRansomware] = useState(null);
+  const [liveHoneypot, setLiveHoneypot]     = useState(null);
+
+  useEffect(() => {
+    fetchRansomwarePredictions()
+      .then(data => setLiveRansomware(data.summary?.ransomware ?? null))
+      .catch(() => {});
+
+    fetchHoneypotLog()
+      .then(data => setLiveHoneypot(data.summary?.total ?? null))
+      .catch(() => {});
+  }, []);
+
+  // Prefer live pipeline count; fall back to prop value passed from old scan flow
+  const displayRansomware = liveRansomware !== null ? liveRansomware : (ransomwareCount ?? 0);
+  const displayHoneypot   = liveHoneypot   !== null ? liveHoneypot   : 0;
 
   return (
     <div className="summary-grid">
@@ -11,7 +28,7 @@ const SummaryCards = ({ ransomwareCount }) => {
           <span className="card-icon danger">●</span>
           <span className="card-title">RANSOMWARE DETECTED</span>
         </div>
-        <div className="card-value danger">{ransomwareCount}</div>
+        <div className="card-value danger">{displayRansomware}</div>
         <div className="card-sub">In Last 24 Hours</div>
       </div>
 
@@ -29,7 +46,7 @@ const SummaryCards = ({ ransomwareCount }) => {
           <span className="card-icon info">🌀</span>
           <span className="card-title">HONEYPOT INTERACTIONS</span>
         </div>
-        <div className="card-value info">58</div>
+        <div className="card-value info">{displayHoneypot}</div>
         <div className="card-sub">In Last 24 Hours</div>
       </div>
 

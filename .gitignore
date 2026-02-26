@@ -20,3 +20,14 @@ venv/
 # OS files
 .DS_Store
 Thumbs.db
+venv/
+__pycache__/
+*.pyc
+tmpclaude*
+frontend/tmpclaude*
+ransomware_module/output/
+ransomware_module/models/
+*.log
+*.h5
+*.pkl
+*.csv
