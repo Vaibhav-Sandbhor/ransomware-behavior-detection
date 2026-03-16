@@ -10,7 +10,7 @@ All SHAP, drift detection, and model internals hidden from frontend.
 No print statements - structured JSON responses only.
 """
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Path
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -19,6 +19,7 @@ import os
 import json
 import uuid
 from datetime import datetime
+import tempfile
 
 # Import the refactored analysis engine
 from scripts.predict_risk import analyze_scan
@@ -166,8 +167,9 @@ async def scan_ports(
         # Generate scan ID
         scan_id = str(uuid.uuid4())[:8]
         
-        # Save uploaded file temporarily
-        temp_file = f"/tmp/nmap_scan_{scan_id}.xml"
+        # Save uploaded file temporarily (platform-independent)
+        temp_dir = tempfile.gettempdir()
+        temp_file = os.path.join(temp_dir, f"nmap_scan_{scan_id}.xml")
         try:
             contents = await xml_file.read()
             with open(temp_file, "wb") as f:
@@ -222,7 +224,7 @@ async def scan_ports(
 
 @app.get("/report/{scan_id}", tags=["Reporting"], response_model=ReportResultResponse)
 async def get_detailed_report(
-    scan_id: str = Query(..., description="Scan ID from /scan endpoint")
+    scan_id: str = Path(..., description="Scan ID from /scan endpoint")
 ):
     """
     Get detailed technical report with SHAP explainability.
@@ -394,6 +396,28 @@ async def api_documentation():
         "ml_logic_preserved": True,
         "drift_detection": "Separate script (scripts/drift_detection.py)",
         "retraining": "Separate script (scripts/retrain_pipeline.py)"
+    }
+
+
+# ============================================================================
+# ROOT ENDPOINT
+# ============================================================================
+
+@app.get("/", tags=["Root"])
+async def root():
+    """Welcome endpoint with API documentation links"""
+    return {
+        "message": "AI Port Scan Risk Intelligence Engine API",
+        "version": "2.0.0",
+        "documentation": "http://localhost:8000/docs",
+        "alternative_docs": "http://localhost:8000/redoc",
+        "endpoints": {
+            "POST /scan": "Upload Nmap XML and get risk assessment",
+            "GET /report/{scan_id}": "Get detailed technical report",
+            "GET /admin/status": "Get operational metrics",
+            "GET /docs": "Interactive API documentation",
+            "GET /redoc": "Alternative documentation"
+        }
     }
 
 
