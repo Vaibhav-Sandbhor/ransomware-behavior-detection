@@ -1,0 +1,63 @@
+
+import xml.etree.ElementTree as ET
+import csv
+import os
+
+INPUT_XML = "scan.xml"
+OUTPUT_CSV = "data/portscan_dataset.csv"
+
+os.makedirs("data", exist_ok=True)
+
+tree = ET.parse(INPUT_XML)
+root = tree.getroot()
+
+rows = []
+
+for host in root.findall("host"):
+    address = host.find("address")
+    if address is None:
+        continue
+
+    ip = address.get("addr")
+
+    ports = host.find("ports")
+    if ports is None:
+        continue
+
+    for port in ports.findall("port"):
+        portid = port.get("portid")
+        protocol = port.get("protocol")
+
+        state = port.find("state")
+        if state is None or state.get("state") != "open":
+            continue
+
+        service = port.find("service")
+        service_name = service.get("name") if service is not None else "unknown"
+        service_version = service.get("version") if service is not None else ""
+
+        rows.append([
+            ip,
+            portid,
+            protocol,
+            service_name,
+            service_version,
+            "",
+            ""
+        ])
+
+with open(OUTPUT_CSV, "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow([
+        "ip",
+        "port",
+        "protocol",
+        "service",
+        "version",
+        "cve",
+        "cvss"
+    ])
+    writer.writerows(rows)
+
+print(f"[+] Dataset created: {OUTPUT_CSV}")
+print(f"[+] Total open services extracted: {len(rows)}")
