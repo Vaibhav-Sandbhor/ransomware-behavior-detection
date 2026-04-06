@@ -439,8 +439,16 @@ def get_metrics_summary(current_user: dict = Depends(get_current_user)):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Historical Data Viewer Endpoints
+# Favicon Endpoint (suppress 404 errors)
 # ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/favicon.ico", tags=["Static"])
+async def favicon():
+    """Return 204 No Content for favicon requests to suppress 404 errors."""
+    return None
+
+
+
 
 @app.get("/history/dates", tags=["History"])
 def get_history_dates(current_user: dict = Depends(get_current_user)):
