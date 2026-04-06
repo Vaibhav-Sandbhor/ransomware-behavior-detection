@@ -11,15 +11,184 @@ import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import threading
 import logging
+import bcrypt
+from jose import JWTError, jwt
+from typing import Optional
+from fastapi import Depends, HTTPException, status, Request
+from sqlalchemy import create_engine, Column, Integer, String, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.sql import func
 
 from ransomware_module.features.feature_extractor import extract_features
 
-# ---------------------------------------------------------------------------
-# Ransomware module output paths
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
+# Authentication Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+# JWT Configuration
+SECRET_KEY = os.getenv("SECRET_KEY", "cybersiem-secret-key-change-in-production-12345678")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+# Database Configuration
+DATABASE_URL = "sqlite:///./cybersiem_auth.db"
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Database Models
+# ─────────────────────────────────────────────────────────────────────────────
+
+class User(Base):
+    """User model for authentication."""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    password = Column(String(255), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self):
+        return f"<User(id={self.id}, email={self.email}, name={self.name})>"
+
+# Create tables
+Base.metadata.create_all(bind=engine)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pydantic Schemas for Auth
+# ─────────────────────────────────────────────────────────────────────────────
+
+class UserRegister(BaseModel):
+    """User registration schema."""
+    name: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    """User login schema."""
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    """User response schema."""
+    id: int
+    name: str
+    email: str
+
+    class Config:
+        from_attributes = True
+
+class LoginResponse(BaseModel):
+    """Login response with token."""
+    access_token: str
+    token_type: str
+    user: UserResponse
+
+class RegisterResponse(BaseModel):
+    """Registration response."""
+    id: int
+    name: str
+    email: str
+    message: str
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Authentication Utilities
+# ─────────────────────────────────────────────────────────────────────────────
+
+class PasswordManager:
+    """Manages password hashing and verification."""
+
+    @staticmethod
+    def hash_password(password: str) -> str:
+        """Hash a password using bcrypt."""
+        truncated_password = password[:72].encode('utf-8')
+        salt = bcrypt.gensalt(rounds=12)
+        hashed = bcrypt.hashpw(truncated_password, salt)
+        return hashed.decode('utf-8')
+
+    @staticmethod
+    def verify_password(plain_password: str, hashed_password: str) -> bool:
+        """Verify a plain password against a hashed password."""
+        truncated_password = plain_password[:72].encode('utf-8')
+        hashed_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(truncated_password, hashed_bytes)
+
+
+class JWTTokenManager:
+    """Manages JWT token creation and verification."""
+
+    @staticmethod
+    def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+        """Create a JWT access token."""
+        to_encode = data.copy()
+
+        if expires_delta:
+            expire = datetime.now(timezone.utc) + expires_delta
+        else:
+            expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+
+    @staticmethod
+    def verify_token(token: str) -> dict:
+        """Verify a JWT token and return the payload."""
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            email: str = payload.get("sub")
+            if email is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid authentication credentials",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            return payload
+        except JWTError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+
+async def get_current_user(request: Request):
+    """Get current user from JWT token (dependency injection)."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token = parts[1]
+    return JWTTokenManager.verify_token(token)
+
+
+def get_db():
+    """Database session dependency."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 _RANSOM_ROOT     = Path(__file__).parent / "ransomware_module"
 _PREDICTIONS_LOG = _RANSOM_ROOT / "output" / "predictions_log.csv"
 _ALERTS_LOG      = _RANSOM_ROOT / "output" / "alerts.log"
@@ -72,12 +241,91 @@ _scan_event = threading.Event()
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Authentication Endpoints
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.post(
+    "/auth/register",
+    response_model=RegisterResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Authentication"],
+)
+def register(user_data: UserRegister, db: Session = Depends(get_db)):
+    """Register a new user."""
+    # Check if email already exists
+    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+
+    # Create new user
+    hashed_password = PasswordManager.hash_password(user_data.password)
+    user = User(
+        name=user_data.name,
+        email=user_data.email,
+        password=hashed_password,
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return RegisterResponse(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        message="User registered successfully",
+    )
+
+
+@app.post(
+    "/auth/login",
+    response_model=LoginResponse,
+    tags=["Authentication"],
+)
+def login(credentials: UserLogin, db: Session = Depends(get_db)):
+    """Login user and return JWT token."""
+    # Find user by email
+    user = db.query(User).filter(User.email == credentials.email).first()
+    if not user or not PasswordManager.verify_password(
+        credentials.password, user.password
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+
+    # Create JWT token
+    access_token = JWTTokenManager.create_access_token(data={"sub": user.email})
+
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserResponse.from_orm(user),
+    )
+
+
+@app.get("/auth/me", response_model=UserResponse, tags=["Authentication"])
+def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get current authenticated user."""
+    user = db.query(User).filter(User.email == current_user.get("sub")).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return UserResponse.from_orm(user)
+
+
 class ScanInput(BaseModel):
     sample_path: str
     label: int = 0
 
 @app.post("/scan")
-def scan(data: ScanInput):
+def scan(data: ScanInput, current_user: dict = Depends(get_current_user)):
 
     print("Received request")
     print("Sample path:", data.sample_path)
@@ -119,7 +367,7 @@ def scan(data: ScanInput):
 # ---------------------------------------------------------------------------
 
 @app.post("/api/ransomware/run-pipeline")
-def run_ransomware_pipeline():
+def run_ransomware_pipeline(current_user: dict = Depends(get_current_user)):
     """
     Run the full 3-step ransomware detection pipeline inline (no subprocesses).
     Step 1: Simulate honeypot -> honeypot_log.csv
@@ -620,7 +868,7 @@ def _run_honeypot_monitor_pipeline():
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.post("/api/ransomware/start-scan-simulation")
-def start_scan_simulation():
+def start_scan_simulation(current_user: dict = Depends(get_current_user)):
     """Start simulation scan in background thread."""
     global _current_scan_mode, _scan_active, _scan_start_time, _scan_stop_requested, _current_scan_thread
 
@@ -652,7 +900,7 @@ def start_scan_simulation():
 
 
 @app.post("/api/ransomware/start-scan-system")
-def start_scan_system():
+def start_scan_system(current_user: dict = Depends(get_current_user)):
     """Start real system monitoring in background thread."""
     global _current_scan_mode, _scan_active, _scan_start_time, _scan_stop_requested, _current_scan_thread
 
@@ -684,7 +932,7 @@ def start_scan_system():
 
 
 @app.post("/api/ransomware/stop-scan")
-def stop_scan():
+def stop_scan(current_user: dict = Depends(get_current_user)):
     """Stop currently running scan."""
     global _scan_stop_requested, _scan_active
 
@@ -733,7 +981,7 @@ def scan_real_system():
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.post("/api/honeypot/start-simulation")
-def start_honeypot_simulation():
+def start_honeypot_simulation(current_user: dict = Depends(get_current_user)):
     """Start honeypot simulation scan in background thread."""
     global _honeypot_scan_mode, _honeypot_scan_active, _honeypot_scan_start_time
     global _honeypot_scan_stop_requested, _honeypot_scan_thread
@@ -766,7 +1014,7 @@ def start_honeypot_simulation():
 
 
 @app.post("/api/honeypot/start-monitor")
-def start_honeypot_monitor():
+def start_honeypot_monitor(current_user: dict = Depends(get_current_user)):
     """Start real honeypot monitoring in background thread."""
     global _honeypot_scan_mode, _honeypot_scan_active, _honeypot_scan_start_time
     global _honeypot_scan_stop_requested, _honeypot_scan_thread
@@ -799,7 +1047,7 @@ def start_honeypot_monitor():
 
 
 @app.post("/api/honeypot/stop")
-def stop_honeypot_scan():
+def stop_honeypot_scan(current_user: dict = Depends(get_current_user)):
     """Stop currently running honeypot scan."""
     global _honeypot_scan_stop_requested, _honeypot_scan_active
 
@@ -817,7 +1065,7 @@ def stop_honeypot_scan():
 
 
 @app.get("/api/honeypot/scan-status")
-def honeypot_scan_status():
+def honeypot_scan_status(current_user: dict = Depends(get_current_user)):
     """Get current honeypot scan status and progress."""
     global _honeypot_scan_start_time, _honeypot_scan_mode
 
@@ -835,7 +1083,7 @@ def honeypot_scan_status():
 
 
 @app.get("/api/honeypot/log")
-def get_honeypot_log():
+def get_honeypot_log(current_user: dict = Depends(get_current_user)):
     """Return honeypot_log.csv as a JSON list with summary stats."""
     if not _HONEYPOT_LOG.exists():
         return {
@@ -931,7 +1179,7 @@ def _nmap_parse(xml_path: str) -> list:
 
 
 @app.post("/api/portscan/scan")
-def portscan_localhost():
+def portscan_localhost(current_user: dict = Depends(get_current_user)):
     """Run Nmap on localhost and return open ports with AI risk levels."""
     with tempfile.NamedTemporaryFile(suffix=".xml", delete=False) as tmp:
         xml_path = tmp.name
@@ -980,7 +1228,7 @@ def portscan_localhost():
 # ---------------------------------------------------------------------------
 
 @app.get("/api/security-metrics")
-def get_security_metrics():
+def get_security_metrics(current_user: dict = Depends(get_current_user)):
     """
     Aggregate and return latest security metrics from scan outputs.
     Reads: predictions_log.csv, honeypot_log.csv

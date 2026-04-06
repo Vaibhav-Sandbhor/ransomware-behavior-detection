@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
+import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
+import { ProtectedRoute } from "./components/ProtectedRoute.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import AlertsPanel from "./components/AlertsPanel.jsx";
 import Topbar from "./components/Topbar.jsx";
 
 import Dashboard from "./pages/Dashboard.jsx";
+import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
 import PortScanDetails from "./pages/details/PortScanDetails.jsx";
 import HoneypotDetails from "./pages/details/HoneypotDetails.jsx";
 import DarkWebDetails from "./pages/details/DarkWebDetails.jsx";
@@ -17,7 +21,8 @@ import {
   fetchHoneypotLog,
 } from "./services/api.js";
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, loading } = useAuth();
   const [moduleData, setModuleData] = useState({
     ransomware: {
       count: null,
@@ -252,64 +257,109 @@ function App() {
   const scanFunctions = { runAllScansParallel, startAutoScan };
 
   return (
-    <div className="app-wrapper">
-      {/* ✅ GLOBAL TOPBAR */}
-      <Topbar />
+    <>
+      {loading ? (
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          fontSize: "18px",
+          color: "#888",
+          background: "linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%)",
+        }}>
+          Loading...
+        </div>
+      ) : !isAuthenticated ? (
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      ) : (
+        <div className="app-wrapper">
+          {/* ✅ GLOBAL TOPBAR */}
+          <Topbar />
 
-      {/* ✅ MAIN DASHBOARD GRID */}
-      <div className="dashboard-layout">
-        <Sidebar />
+          {/* ✅ MAIN DASHBOARD GRID */}
+          <div className="dashboard-layout">
+            <Sidebar />
 
-        <main className="dashboard-main">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <Dashboard
-                  moduleData={moduleData}
-                  updateModuleData={updateModuleData}
-                  alerts={alerts}
-                  setAlerts={setAlerts}
-                  scanFunctions={scanFunctions}
-                  timelineData={timelineData}
-                  setTimelineData={setTimelineData}
+            <main className="dashboard-main">
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard
+                        moduleData={moduleData}
+                        updateModuleData={updateModuleData}
+                        alerts={alerts}
+                        setAlerts={setAlerts}
+                        scanFunctions={scanFunctions}
+                        timelineData={timelineData}
+                        setTimelineData={setTimelineData}
+                      />
+                    </ProtectedRoute>
+                  }
                 />
-              }
-            />
-            <Route
-              path="/details/portscan"
-              element={
-                <PortScanDetails
-                  moduleState={moduleData.portscan}
-                  updateModuleState={(patch) => updateModuleData("portscan", patch)}
+                <Route
+                  path="/details/portscan"
+                  element={
+                    <ProtectedRoute>
+                      <PortScanDetails
+                        moduleState={moduleData.portscan}
+                        updateModuleState={(patch) => updateModuleData("portscan", patch)}
+                      />
+                    </ProtectedRoute>
+                  }
                 />
-              }
-            />
-            <Route
-              path="/details/honeypot"
-              element={
-                <HoneypotDetails
-                  moduleState={moduleData.honeypot}
-                  updateModuleState={(patch) => updateModuleData("honeypot", patch)}
+                <Route
+                  path="/details/honeypot"
+                  element={
+                    <ProtectedRoute>
+                      <HoneypotDetails
+                        moduleState={moduleData.honeypot}
+                        updateModuleState={(patch) => updateModuleData("honeypot", patch)}
+                      />
+                    </ProtectedRoute>
+                  }
                 />
-              }
-            />
-            <Route path="/details/darkweb" element={<DarkWebDetails />} />
-            <Route
-              path="/details/ransomware"
-              element={
-                <RansomwareDetails
-                  moduleState={moduleData.ransomware}
-                  updateModuleState={(patch) => updateModuleData("ransomware", patch)}
+                <Route
+                  path="/details/darkweb"
+                  element={
+                    <ProtectedRoute>
+                      <DarkWebDetails />
+                    </ProtectedRoute>
+                  }
                 />
-              }
-            />
-          </Routes>
-        </main>
+                <Route
+                  path="/details/ransomware"
+                  element={
+                    <ProtectedRoute>
+                      <RansomwareDetails
+                        moduleState={moduleData.ransomware}
+                        updateModuleState={(patch) => updateModuleData("ransomware", patch)}
+                      />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </main>
 
-        <AlertsPanel alerts={alerts} setAlerts={setAlerts} />
-      </div>
-    </div>
+            <AlertsPanel alerts={alerts} setAlerts={setAlerts} />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
