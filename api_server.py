@@ -26,6 +26,23 @@ from sqlalchemy.sql import func
 from ransomware_module.features.feature_extractor import extract_features
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Database Integration for Metrics & Events
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    from database.init_db import init_database
+    from database.session_manager import start_session, get_current_session
+    from database.event_logger import log_ransomware_threat, log_port_open, log_honeypot_interaction
+    from database.metrics_manager import store_metrics
+    ENABLE_DB = True
+except ImportError as e:
+    logger = logging.getLogger(__name__)
+    logger.warning(f"⚠️  Database module not available: {e}. Running without persistence.")
+    ENABLE_DB = False
+
+# Global session ID (will be set on startup)
+CURRENT_SESSION_ID = None
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Authentication Configuration
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -210,6 +227,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Initialize Database on Startup
+# ─────────────────────────────────────────────────────────────────────────────
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database and start a session on server startup."""
+    global CURRENT_SESSION_ID, logger
+
+    if ENABLE_DB:
+        try:
+            init_database()
+            CURRENT_SESSION_ID = start_session()
+            logger.info(f"✅ Database initialized with session ID: {CURRENT_SESSION_ID}")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize database: {e}")
+    else:
+        logger.warning("⚠️  Database is disabled, running without persistence")
+
 MODEL_PATH = os.path.join("ransomware_module", "models", "rf_model.joblib")
 model = joblib.load(MODEL_PATH)
 
@@ -318,6 +353,89 @@ def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends
             detail="User not found",
         )
     return UserResponse.from_orm(user)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Data Retrieval APIs (Database Integration)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/api/metrics", tags=["Metrics"])
+def get_metrics(current_user: dict = Depends(get_current_user)):
+    """Get metrics timeline data for charts."""
+    if not ENABLE_DB or CURRENT_SESSION_ID is None:
+        return {"error": "Database not available"}
+
+    try:
+        from database.metrics_manager import get_metrics_for_session
+        metrics = get_metrics_for_session(CURRENT_SESSION_ID)
+        return {"metrics": metrics, "session_id": CURRENT_SESSION_ID}
+    except Exception as e:
+        logger.error(f"❌ Error fetching metrics: {e}")
+        return {"error": str(e)}
+
+
+@app.get("/api/events", tags=["Events"])
+def get_events(current_user: dict = Depends(get_current_user)):
+    """Get all threat events from current session."""
+    if not ENABLE_DB or CURRENT_SESSION_ID is None:
+        return {"error": "Database not available"}
+
+    try:
+        from database.db_manager import execute_query
+        results = execute_query(
+            """SELECT module, event_type, severity, details, timestamp
+               FROM threat_events
+               WHERE session_id = ?
+               ORDER BY timestamp DESC
+               LIMIT 100""",
+            (CURRENT_SESSION_ID,)
+        )
+        events = [dict(row) for row in results]
+        return {"events": events, "total": len(events)}
+    except Exception as e:
+        logger.error(f"❌ Error fetching events: {e}")
+        return {"error": str(e)}
+
+
+@app.get("/api/events/by-date", tags=["Events"])
+def get_events_by_date(date: str, current_user: dict = Depends(get_current_user)):
+    """
+    Get threat events for a specific date.
+
+    Query param: date (format: YYYY-MM-DD)
+    """
+    if not ENABLE_DB or CURRENT_SESSION_ID is None:
+        return {"error": "Database not available"}
+
+    try:
+        from database.db_manager import execute_query
+        results = execute_query(
+            """SELECT module, event_type, severity, details, timestamp
+               FROM threat_events
+               WHERE session_id = ? AND DATE(timestamp) = ?
+               ORDER BY timestamp DESC""",
+            (CURRENT_SESSION_ID, date)
+        )
+        events = [dict(row) for row in results]
+        return {"date": date, "events": events, "total": len(events)}
+    except Exception as e:
+        logger.error(f"❌ Error fetching events by date: {e}")
+        return {"error": str(e)}
+
+
+@app.get("/api/metrics/summary", tags=["Metrics"])
+def get_metrics_summary(current_user: dict = Depends(get_current_user)):
+    """Get summary statistics for metrics."""
+    if not ENABLE_DB or CURRENT_SESSION_ID is None:
+        return {"error": "Database not available"}
+
+    try:
+        from database.metrics_manager import get_metrics_summary
+        summary = get_metrics_summary(CURRENT_SESSION_ID)
+        return summary or {"error": "No data available"}
+    except Exception as e:
+        logger.error(f"❌ Error fetching metrics summary: {e}")
+        return {"error": str(e)}
 
 
 class ScanInput(BaseModel):
@@ -449,6 +567,20 @@ def run_ransomware_pipeline(current_user: dict = Depends(get_current_user)):
             "suspicious": sum(1 for p in predictions if p["threat_level"] == "WARNING"),
             "ransomware": sum(1 for p in predictions if p["threat_level"] == "CRITICAL"),
         }
+
+        # ── Log to database ────────────────────────────────────────────
+        if ENABLE_DB and CURRENT_SESSION_ID is not None:
+            try:
+                # Log ransomware threat event
+                if summary["ransomware"] > 0:
+                    log_ransomware_threat(
+                        CURRENT_SESSION_ID,
+                        summary["ransomware"],
+                        f"Detected {summary['ransomware']} ransomware threat(s) in pipeline"
+                    )
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to log ransomware event: {e}")
+
         return {"status": "ok", "message": "Pipeline completed successfully", "summary": summary}
 
     except Exception as e:
@@ -1121,6 +1253,21 @@ def get_honeypot_log(current_user: dict = Depends(get_current_user)):
         "warning":  sum(1 for r in rows if r["level"] == "WARNING"),
         "benign":   sum(1 for r in rows if r["level"] == "INFO"),
     }
+
+    # ── Log to database ────────────────────────────────────────────
+    if ENABLE_DB and CURRENT_SESSION_ID is not None:
+        try:
+            # Log honeypot interactions
+            critical_count = summary["critical"]
+            if critical_count > 0:
+                log_honeypot_interaction(
+                    CURRENT_SESSION_ID,
+                    critical_count,
+                    f"Detected {critical_count} critical honeypot interaction(s)"
+                )
+        except Exception as e:
+            logger.warning(f"⚠️  Failed to log honeypot event: {e}")
+
     return {"events": rows, "summary": summary}
 
 
@@ -1200,6 +1347,20 @@ def portscan_localhost(current_user: dict = Depends(get_current_user)):
         high   = sum(1 for p in ports if p["risk"] == "HIGH")
         medium = sum(1 for p in ports if p["risk"] == "MEDIUM")
         low    = sum(1 for p in ports if p["risk"] == "LOW")
+
+        # ── Log to database ────────────────────────────────────────────
+        if ENABLE_DB and CURRENT_SESSION_ID is not None:
+            try:
+                # Log each open port
+                for port in ports:
+                    log_port_open(
+                        CURRENT_SESSION_ID,
+                        port.get("port", "unknown"),
+                        port.get("risk", "MEDIUM"),
+                        f"Service: {port.get('service', 'unknown')}"
+                    )
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to log port events: {e}")
 
         return {
             "status":     "success",
