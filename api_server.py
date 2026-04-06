@@ -114,6 +114,16 @@ class RegisterResponse(BaseModel):
     email: str
     message: str
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Request/Response Schemas
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ScanInput(BaseModel):
+    """Ransomware scan input schema."""
+    sample_path: str
+    label: int = 0
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Authentication Utilities
 # ─────────────────────────────────────────────────────────────────────────────
