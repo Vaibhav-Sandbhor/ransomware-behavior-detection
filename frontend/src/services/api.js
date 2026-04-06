@@ -206,3 +206,38 @@ export const getSecurityMetrics = async () => {
   return response.json();
 };
 
+// ---------------------------------------------------------------------------
+// Historical Data Viewer API
+// ---------------------------------------------------------------------------
+
+export const getHistoryDates = async () => {
+  const response = await fetch(`${API_BASE}/history/dates`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error("Failed to fetch history dates");
+  return response.json();
+};
+
+export const getHistoryMetrics = async (date) => {
+  const response = await fetch(`${API_BASE}/history/metrics?date=${date}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch metrics for ${date}`);
+  return response.json();
+};
+
+export const getHistoryEvents = async (date) => {
+  const response = await fetch(`${API_BASE}/history/events?date=${date}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch events for ${date}`);
+  return response.json();
+};
+
+export const getHistoryHealth = async () => {
+  const response = await fetch(`${API_BASE}/health/history`, {
+    headers: getAuthHeaders(),
+  });
+  return response.json();
+};
+

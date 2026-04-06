@@ -84,6 +84,28 @@ body {
   color: white;
 }
 
+/* History Menu Item */
+.sidebar li.divider {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 15px 0;
+}
+
+.sidebar li.history-item a {
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.1) 0%, rgba(100, 200, 255, 0.05) 100%);
+  border: 1px solid rgba(100, 200, 255, 0.2);
+  color: #64c8ff;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.sidebar li.history-item a:hover {
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.2) 0%, rgba(100, 200, 255, 0.1) 100%);
+  border-color: #64c8ff;
+  color: white;
+  box-shadow: 0 4px 12px rgba(100, 200, 255, 0.2);
+}
+
 /* =========================
    CENTER CONTENT
 ========================= */

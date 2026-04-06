@@ -438,7 +438,203 @@ def get_metrics_summary(current_user: dict = Depends(get_current_user)):
         return {"error": str(e)}
 
 
-class ScanInput(BaseModel):
+# ─────────────────────────────────────────────────────────────────────────────
+# Historical Data Viewer Endpoints
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/history/dates", tags=["History"])
+def get_history_dates(current_user: dict = Depends(get_current_user)):
+    """Get list of available dates with data in the database."""
+    if not ENABLE_DB:
+        return {"error": "Database not available"}
+
+    try:
+        from database.db_manager import execute_query
+
+        # Get all unique dates from threat_events
+        event_dates = execute_query(
+            """SELECT DISTINCT DATE(timestamp) as date
+               FROM threat_events
+               ORDER BY date DESC"""
+        )
+
+        # Get all unique dates from scan_metrics
+        metric_dates = execute_query(
+            """SELECT DISTINCT DATE(timestamp) as date
+               FROM scan_metrics
+               ORDER BY date DESC"""
+        )
+
+        # Combine and deduplicate
+        all_dates = set()
+        for row in event_dates:
+            if row['date']:
+                all_dates.add(row['date'])
+        for row in metric_dates:
+            if row['date']:
+                all_dates.add(row['date'])
+
+        dates = sorted(list(all_dates), reverse=True)
+        logger.info(f"📅 Found {len(dates)} available history dates")
+        return {"dates": dates, "total": len(dates)}
+    except Exception as e:
+        logger.error(f"❌ Error fetching history dates: {e}")
+        return {"error": str(e)}
+
+
+@app.get("/history/metrics", tags=["History"])
+def get_history_metrics(date: str, current_user: dict = Depends(get_current_user)):
+    """
+    Get all metrics for a specific date.
+
+    Query params:
+    - date: Date in format YYYY-MM-DD
+
+    Returns metrics timeline for that date.
+    """
+    if not ENABLE_DB:
+        return {"error": "Database not available"}
+
+    try:
+        from database.db_manager import execute_query
+
+        results = execute_query(
+            """SELECT id, timestamp, ransomware_count, portscan_count, honeypot_hits
+               FROM scan_metrics
+               WHERE DATE(timestamp) = ?
+               ORDER BY timestamp ASC""",
+            (date,)
+        )
+
+        metrics = [
+            {
+                "id": row['id'],
+                "timestamp": row['timestamp'],
+                "ransomware_count": row['ransomware_count'],
+                "portscan_count": row['portscan_count'],
+                "honeypot_hits": row['honeypot_hits'],
+            }
+            for row in results
+        ]
+
+        # Get max values for that day
+        summary_result = execute_query(
+            """SELECT
+                MAX(ransomware_count) as max_ransomware,
+                MAX(portscan_count) as max_portscan,
+                MAX(honeypot_hits) as max_honeypot,
+                MIN(timestamp) as first_recorded,
+                MAX(timestamp) as last_recorded
+               FROM scan_metrics
+               WHERE DATE(timestamp) = ?""",
+            (date,)
+        )
+
+        summary = {}
+        if summary_result:
+            row = summary_result[0]
+            summary = {
+                "max_ransomware": row['max_ransomware'] or 0,
+                "max_portscan": row['max_portscan'] or 0,
+                "max_honeypot": row['max_honeypot'] or 0,
+                "first_recorded": row['first_recorded'],
+                "last_recorded": row['last_recorded'],
+            }
+
+        logger.info(f"📊 Retrieved {len(metrics)} metrics for date {date}")
+        return {
+            "date": date,
+            "metrics": metrics,
+            "summary": summary,
+            "total": len(metrics)
+        }
+    except Exception as e:
+        logger.error(f"❌ Error fetching history metrics: {e}")
+        return {"error": str(e)}
+
+
+@app.get("/history/events", tags=["History"])
+def get_history_events(date: str, current_user: dict = Depends(get_current_user)):
+    """
+    Get all threat events for a specific date.
+
+    Query params:
+    - date: Date in format YYYY-MM-DD
+
+    Returns threats detected on that date.
+    """
+    if not ENABLE_DB:
+        return {"error": "Database not available"}
+
+    try:
+        from database.db_manager import execute_query
+
+        results = execute_query(
+            """SELECT id, module, event_type, severity, details, timestamp
+               FROM threat_events
+               WHERE DATE(timestamp) = ?
+               ORDER BY timestamp DESC""",
+            (date,)
+        )
+
+        events = [
+            {
+                "id": row['id'],
+                "module": row['module'],
+                "event_type": row['event_type'],
+                "severity": row['severity'],
+                "details": row['details'],
+                "timestamp": row['timestamp'],
+            }
+            for row in results
+        ]
+
+        # Count by severity
+        severity_counts = {
+            "CRITICAL": sum(1 for e in events if e["severity"] == "CRITICAL"),
+            "HIGH": sum(1 for e in events if e["severity"] == "HIGH"),
+            "MEDIUM": sum(1 for e in events if e["severity"] == "MEDIUM"),
+            "LOW": sum(1 for e in events if e["severity"] == "LOW"),
+        }
+
+        logger.info(f"📝 Retrieved {len(events)} events for date {date}")
+        return {
+            "date": date,
+            "events": events,
+            "severity_counts": severity_counts,
+            "total": len(events)
+        }
+    except Exception as e:
+        logger.error(f"❌ Error fetching history events: {e}")
+        return {"error": str(e)}
+
+
+@app.get("/health/history", tags=["Health"])
+def health_check_history(current_user: dict = Depends(get_current_user)):
+    """Check if historical data is available."""
+    if not ENABLE_DB:
+        return {"status": "disabled", "message": "Database not available"}
+
+    try:
+        from database.db_manager import execute_query
+        count = execute_query("SELECT COUNT(*) as count FROM scan_metrics")
+        total_metrics = count[0]['count'] if count else 0
+
+        event_count = execute_query("SELECT COUNT(*) as count FROM threat_events")
+        total_events = event_count[0]['count'] if event_count else 0
+
+        return {
+            "status": "available",
+            "metrics_entries": total_metrics,
+            "event_entries": total_events,
+            "database": "cybersiem_data.db"
+        }
+    except Exception as e:
+        logger.error(f"❌ Error checking history health: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+
     sample_path: str
     label: int = 0
 

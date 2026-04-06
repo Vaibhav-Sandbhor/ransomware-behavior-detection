@@ -9,6 +9,8 @@ function Sidebar() {
         <li><Link to="/">Dashboard</Link></li>
         <li><Link to="/threats">Threat Details</Link></li>
         <li><Link to="/honeypot">Honeypot Logs</Link></li>
+        <li className="divider"></li>
+        <li className="history-item"><Link to="/history">📅 History</Link></li>
       </ul>
     </aside>
   );

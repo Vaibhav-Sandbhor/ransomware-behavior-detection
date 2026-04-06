@@ -10,6 +10,7 @@ import Topbar from "./components/Topbar.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
+import HistoryViewer from "./pages/HistoryViewer.jsx";
 import PortScanDetails from "./pages/details/PortScanDetails.jsx";
 import HoneypotDetails from "./pages/details/HoneypotDetails.jsx";
 import DarkWebDetails from "./pages/details/DarkWebDetails.jsx";
@@ -277,32 +278,48 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       ) : (
-        <div className="app-wrapper">
-          {/* ✅ GLOBAL TOPBAR */}
-          <Topbar />
+        <>
+          <Routes>
+            {/* History Viewer - Full Page */}
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <HistoryViewer />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* ✅ MAIN DASHBOARD GRID */}
-          <div className="dashboard-layout">
-            <Sidebar />
+            {/* All Dashboard Routes */}
+            <Route
+              path="*"
+              element={
+                <div className="app-wrapper">
+                  {/* ✅ GLOBAL TOPBAR */}
+                  <Topbar />
 
-            <main className="dashboard-main">
-              <Routes>
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard
-                        moduleData={moduleData}
-                        updateModuleData={updateModuleData}
-                        alerts={alerts}
-                        setAlerts={setAlerts}
-                        scanFunctions={scanFunctions}
-                        timelineData={timelineData}
-                        setTimelineData={setTimelineData}
-                      />
-                    </ProtectedRoute>
-                  }
-                />
+                  {/* ✅ MAIN DASHBOARD GRID */}
+                  <div className="dashboard-layout">
+                    <Sidebar />
+
+                    <main className="dashboard-main">
+                      <Routes>
+                        <Route
+                          path="/"
+                          element={
+                            <ProtectedRoute>
+                              <Dashboard
+                                moduleData={moduleData}
+                                updateModuleData={updateModuleData}
+                                alerts={alerts}
+                                setAlerts={setAlerts}
+                                scanFunctions={scanFunctions}
+                                timelineData={timelineData}
+                                setTimelineData={setTimelineData}
+                              />
+                            </ProtectedRoute>
+                          }
+                        />
                 <Route
                   path="/details/portscan"
                   element={
@@ -350,6 +367,10 @@ function AppContent() {
             <AlertsPanel alerts={alerts} setAlerts={setAlerts} />
           </div>
         </div>
+              }
+            />
+          </Routes>
+        </>
       )}
     </>
   );

@@ -19,7 +19,7 @@ const SummaryCards = ({ moduleData }) => {
 
   const cardConfig = {
     ransomware: {
-      title: "RANSOMWARE DETECTED",
+      title: "RANSOMWARE ALERTS DETECTED",
       icon: "●",
       class: "danger",
       color: "#dc2626",
