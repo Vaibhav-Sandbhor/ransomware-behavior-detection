@@ -241,3 +241,78 @@ export const getHistoryHealth = async () => {
   return response.json();
 };
 
+// ---------------------------------------------------------------------------
+// Session-Based Storage API (Optimized - stores only at logout + optional timeline)
+// ---------------------------------------------------------------------------
+
+/**
+ * Start a new session for the authenticated user.
+ * Call this after successful login.
+ */
+export const startUserSession = async () => {
+  const response = await fetch(`${API_BASE}/api/session/start`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error("Failed to start session");
+  return response.json();
+};
+
+/**
+ * End the user's session and save the final dashboard snapshot.
+ * Call this before logout.
+ * @param {Object} snapshotData - Complete dashboard state
+ * @param {Object} snapshotData.summary - Summary metrics (total_events, ransomware_critical, etc.)
+ * @param {Object} snapshotData.ransomware - Ransomware details (total_processes, ransomware, etc.)
+ * @param {Array} snapshotData.ports - Port scan results array
+ */
+export const endUserSession = async (snapshotData) => {
+  const response = await fetch(`${API_BASE}/api/session/end`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(snapshotData),
+  });
+  if (!response.ok) throw new Error("Failed to end session");
+  return response.json();
+};
+
+/**
+ * Save an optional timeline snapshot (max 5 per session).
+ * Call this periodically during session - NOT every scan cycle.
+ * @param {Object} snapshotData - Dashboard state to save
+ */
+export const saveTimelineSnapshot = async (snapshotData) => {
+  const response = await fetch(`${API_BASE}/api/session/snapshot`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(snapshotData),
+  });
+  if (!response.ok) throw new Error("Failed to save timeline snapshot");
+  return response.json();
+};
+
+/**
+ * Get list of all sessions for the authenticated user.
+ * Returns sessions ordered by start time (newest first).
+ */
+export const getUserSessions = async () => {
+  const response = await fetch(`${API_BASE}/history/sessions`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error("Failed to fetch user sessions");
+  return response.json();
+};
+
+/**
+ * Get detailed session data including final snapshot and timeline.
+ * Use this to replay a historical session on the dashboard.
+ * @param {number} sessionId - The session ID to retrieve
+ */
+export const getSessionDetail = async (sessionId) => {
+  const response = await fetch(`${API_BASE}/history/session/${sessionId}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) throw new Error("Failed to fetch session detail");
+  return response.json();
+};
+

@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
-function Topbar() {
+function Topbar({ viewMode, onSwitchToLive }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showLogout, setShowLogout] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
@@ -18,6 +18,18 @@ function Topbar() {
       <div className="topbar-left">
         <span className="brand-icon">🛡️</span>
         <span className="brand-name">CTI-MAF-WATCH</span>
+        {viewMode === "history" && (
+          <span className="mode-badge history-mode">
+            📜 HISTORY MODE
+            <button 
+              className="btn-exit-history"
+              onClick={onSwitchToLive}
+              title="Return to live dashboard"
+            >
+              ✕
+            </button>
+          </span>
+        )}
       </div>
 
       {/* CENTER MESSAGE */}

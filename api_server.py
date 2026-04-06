@@ -652,6 +652,207 @@ def health_check_history(current_user: dict = Depends(get_current_user)):
         return {"status": "error", "message": str(e)}
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Session-Based Storage API (Optimized - stores only at logout + optional timeline)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class SnapshotData(BaseModel):
+    """Dashboard snapshot data for session storage."""
+    summary: dict
+    ransomware: dict
+    ports: list
+
+
+@app.post("/api/session/start", tags=["Session"])
+def start_user_session_endpoint(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Start a new session for the authenticated user.
+    Called on login - creates a session tied to the user.
+    """
+    if not ENABLE_DB:
+        return {"error": "Database not available"}
+
+    try:
+        # Get user ID from email
+        user = db.query(User).filter(User.email == current_user.get("sub")).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        from database.snapshot_manager import start_user_session, get_active_session_for_user
+
+        # Check if user already has an active session
+        existing_session = get_active_session_for_user(user.id)
+        if existing_session:
+            logger.info(f"♻️ User {user.id} already has active session: {existing_session}")
+            return {"session_id": existing_session, "status": "existing"}
+
+        # Start new session
+        session_id = start_user_session(user.id)
+        logger.info(f"✅ Started new session {session_id} for user {user.id}")
+        return {"session_id": session_id, "status": "created"}
+    except Exception as e:
+        logger.error(f"❌ Error starting session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/session/end", tags=["Session"])
+def end_user_session_endpoint(
+    snapshot_data: SnapshotData,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    End the user's session and save the final dashboard snapshot.
+    Called on logout - stores complete dashboard state.
+    """
+    if not ENABLE_DB:
+        return {"error": "Database not available"}
+
+    try:
+        user = db.query(User).filter(User.email == current_user.get("sub")).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        from database.snapshot_manager import get_active_session_for_user, end_user_session
+
+        session_id = get_active_session_for_user(user.id)
+        if not session_id:
+            return {"error": "No active session found", "status": "no_session"}
+
+        # Convert to dict for storage
+        snapshot_dict = {
+            "summary": snapshot_data.summary,
+            "ransomware": snapshot_data.ransomware,
+            "ports": snapshot_data.ports
+        }
+
+        end_user_session(session_id, snapshot_dict)
+        logger.info(f"✅ Ended session {session_id} with final snapshot for user {user.id}")
+        return {"session_id": session_id, "status": "ended"}
+    except Exception as e:
+        logger.error(f"❌ Error ending session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/session/snapshot", tags=["Session"])
+def save_timeline_snapshot_endpoint(
+    snapshot_data: SnapshotData,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Save an optional timeline snapshot (max 5 per session).
+    Called periodically during session - NOT every scan cycle.
+    """
+    if not ENABLE_DB:
+        return {"error": "Database not available"}
+
+    try:
+        user = db.query(User).filter(User.email == current_user.get("sub")).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        from database.snapshot_manager import (
+            get_active_session_for_user,
+            save_timeline_snapshot,
+            get_timeline_snapshot_count,
+            MAX_TIMELINE_SNAPSHOTS
+        )
+
+        session_id = get_active_session_for_user(user.id)
+        if not session_id:
+            return {"error": "No active session found", "status": "no_session"}
+
+        current_count = get_timeline_snapshot_count(session_id)
+        if current_count >= MAX_TIMELINE_SNAPSHOTS:
+            return {
+                "status": "limit_reached",
+                "message": f"Maximum {MAX_TIMELINE_SNAPSHOTS} timeline snapshots reached",
+                "current_count": current_count
+            }
+
+        snapshot_dict = {
+            "summary": snapshot_data.summary,
+            "ransomware": snapshot_data.ransomware,
+            "ports": snapshot_data.ports
+        }
+
+        snapshot_id = save_timeline_snapshot(session_id, snapshot_dict)
+        logger.info(f"✅ Saved timeline snapshot {snapshot_id} for session {session_id}")
+        return {
+            "snapshot_id": snapshot_id,
+            "session_id": session_id,
+            "status": "saved",
+            "count": current_count + 1,
+            "max": MAX_TIMELINE_SNAPSHOTS
+        }
+    except Exception as e:
+        logger.error(f"❌ Error saving timeline snapshot: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/history/sessions", tags=["Session History"])
+def get_user_sessions_endpoint(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of all sessions for the authenticated user.
+    Returns sessions ordered by start time (newest first).
+    """
+    if not ENABLE_DB:
+        return {"error": "Database not available"}
+
+    try:
+        user = db.query(User).filter(User.email == current_user.get("sub")).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        from database.snapshot_manager import get_user_sessions
+
+        sessions = get_user_sessions(user.id)
+        return {
+            "sessions": sessions,
+            "total": len(sessions),
+            "user_id": user.id
+        }
+    except Exception as e:
+        logger.error(f"❌ Error fetching user sessions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/history/session/{session_id}", tags=["Session History"])
+def get_session_detail_endpoint(
+    session_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get detailed session data including final snapshot and timeline.
+    Used to replay a historical session on the dashboard.
+    """
+    if not ENABLE_DB:
+        return {"error": "Database not available"}
+
+    try:
+        user = db.query(User).filter(User.email == current_user.get("sub")).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        from database.snapshot_manager import get_session_detail
+
+        session = get_session_detail(session_id, user_id=user.id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found or access denied")
+
+        return session
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error fetching session detail: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
     sample_path: str
     label: int = 0

@@ -4,16 +4,28 @@ import Charts from "../components/Charts.jsx";
 import ThreatTable from "../components/ThreatTable.jsx";
 import ScanningOverlay from "../components/ScanningOverlay.jsx";
 
-function Dashboard({ moduleData, updateModuleData, alerts, setAlerts, scanFunctions, timelineData, setTimelineData }) {
+function Dashboard({ moduleData, updateModuleData, alerts, setAlerts, scanFunctions, timelineData, setTimelineData, viewMode = "live", hasScanRun = false }) {
   const [isScanning, setIsScanning] = useState(false);
 
   const toStatus = (isThreat) => (isThreat ? "MALICIOUS" : "SAFE");
 
   const handleGlobalScan = async () => {
+    // Don't allow scanning in history mode
+    if (viewMode === "history") {
+      console.log("Scanning disabled in history mode");
+      return;
+    }
+
     setIsScanning(true);
 
-    // ✅ CLEAR TIMELINE DATA when starting new global scan
-    setTimelineData([]);
+    // ✅ CLEAR TIMELINE DATA and start from origin (0,0,0)
+    const startTime = new Date().toLocaleTimeString();
+    setTimelineData([{
+      time: startTime,
+      ransomware: 0,
+      port_scan: 0,
+      honeypot: 0
+    }]);
 
     try {
       // Call the centralized auto-scanning function from App.jsx
@@ -36,17 +48,41 @@ function Dashboard({ moduleData, updateModuleData, alerts, setAlerts, scanFuncti
     <>
       <h1 className="page-title">Security Operations Center</h1>
       <p className="page-sub">
-        AI Engine: <span className="green">RUNNING</span>
+        AI Engine: <span className={viewMode === "live" ? "green" : "orange"}>
+          {viewMode === "live" ? "RUNNING" : "VIEWING HISTORY"}
+        </span>
       </p>
 
+      {viewMode === "history" && (
+        <div className="history-banner">
+          <span>📜 You are viewing historical data. </span>
+          <button 
+            className="btn-return-live"
+            onClick={scanFunctions?.switchToLiveMode}
+          >
+            Return to Live
+          </button>
+        </div>
+      )}
+
       <div className="global-scan-wrap">
-        <button className="global-scan-btn" onClick={handleGlobalScan} disabled={isScanning}>
+        <button 
+          className="global-scan-btn" 
+          onClick={handleGlobalScan} 
+          disabled={isScanning || viewMode === "history"}
+          title={viewMode === "history" ? "Scanning disabled in history mode" : ""}
+        >
           {isScanning ? "Scanning..." : "Global Scan"}
         </button>
       </div>
 
       <SummaryCards moduleData={moduleData} />
-      <Charts moduleData={moduleData} timelineData={timelineData} setTimelineData={setTimelineData} />
+      <Charts 
+        moduleData={moduleData} 
+        timelineData={timelineData} 
+        setTimelineData={setTimelineData} 
+        viewMode={viewMode}
+      />
       <ThreatTable />
 
       <ScanningOverlay visible={isScanning} />

@@ -4,10 +4,10 @@
    GLOBAL THEME VARIABLES
 ========================= */
 :root {
-  --bg-main: #0b1220;
-  --bg-panel: #0f172a;
-  --bg-panel-soft: #020617;
-  --border-soft: #1e293b;
+  --bg-main: #000000;
+  --bg-panel: #0a0a0a;
+  --bg-panel-soft: #050505;
+  --border-soft: #1a1a1a;
 
   --text-primary: #e5e7eb;
   --text-secondary: #94a3b8;
@@ -29,7 +29,7 @@
 body {
   margin: 0;
   font-family: "Segoe UI", system-ui, sans-serif;
-  background: var(--bg-main);
+  background: #000000;
   color: var(--text-primary);
 }
 
@@ -40,7 +40,7 @@ body {
   display: grid;
   grid-template-columns: 240px 1fr 340px;
   height: 100vh;
-  background: radial-gradient(circle at top, #0b1220, #020617);
+  background: #000000;
   overflow: hidden;
 }
 
@@ -51,6 +51,8 @@ body {
   background: #020617;
   border-right: 1px solid var(--border-soft);
   padding: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .logo {
@@ -62,6 +64,7 @@ body {
 
 .sidebar ul {
   padding: 0;
+  flex: 1;
 }
 
 .sidebar li {
@@ -82,6 +85,32 @@ body {
 .sidebar a.active {
   background: var(--bg-panel);
   color: white;
+}
+
+/* Sidebar Footer (Logout Button) */
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border-color: #ef4444;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
 }
 
 /* History Menu Item */
@@ -363,34 +392,80 @@ body {
   font-size: 12.5px;
   background: var(--bg-panel);
   border-left: 4px solid transparent;
+  align-items: flex-start;
 }
 
-/* CRITICAL – RANSOMWARE */
+/* CRITICAL → 🔴 Red */
 .alert.critical {
-  border-left-color: var(--red);
+  border-left-color: #dc2626;
   background: rgba(220, 38, 38, 0.12);
   box-shadow: 0 0 15px rgba(220, 38, 38, 0.25);
 }
 
-/* HIGH – PORT SCAN / BRUTE FORCE */
+/* HIGH → 🟠 Orange */
 .alert.high {
-  border-left-color: var(--orange);
+  border-left-color: #f59e0b;
   background: rgba(245, 158, 11, 0.12);
   box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
 }
 
-/* MEDIUM – DARK WEB / SUSPICIOUS */
+/* MEDIUM → 🟡 Yellow */
 .alert.medium {
-  border-left-color: var(--blue);
+  border-left-color: #eab308;
+  background: rgba(234, 179, 8, 0.12);
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.25);
+}
+
+/* LOW → 🟢 Green */
+.alert.low {
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.25);
+}
+
+/* INFO / SAFE → 🔵 Blue */
+.alert.info,
+.alert.safe {
+  border-left-color: #3b82f6;
   background: rgba(59, 130, 246, 0.12);
   box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
 }
 
-/* LOW – INFORMATIONAL */
-.alert.low {
-  border-left-color: var(--purple);
-  background: rgba(168, 85, 247, 0.12);
-  box-shadow: 0 0 15px rgba(168, 85, 247, 0.25);
+/* Severity Badge */
+.severity-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.severity-badge.critical {
+  background: rgba(220, 38, 38, 0.3);
+  color: #fca5a5;
+}
+
+.severity-badge.high {
+  background: rgba(245, 158, 11, 0.3);
+  color: #fcd34d;
+}
+
+.severity-badge.medium {
+  background: rgba(234, 179, 8, 0.3);
+  color: #fef08a;
+}
+
+.severity-badge.low {
+  background: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+.severity-badge.info,
+.severity-badge.safe {
+  background: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
 }
 
 .alert-time {
@@ -747,7 +822,7 @@ body {
   flex: 1;
   display: grid;
   grid-template-columns: 240px 1fr 340px;
-  background: radial-gradient(circle at top, #0b1220, #020617);
+  background: #000000;
   overflow: hidden;
 }
 
@@ -757,7 +832,7 @@ body {
 .topbar {
   width: 100%;
   height: 60px;
-  background: rgba(2, 6, 23, 0.92);
+  background: rgba(0, 0, 0, 0.92);
 
   border-bottom: 1px solid rgba(30, 41, 59, 0.6);
 
@@ -1048,4 +1123,85 @@ body {
     opacity: 1;
     pointer-events: auto;
   }
+}
+
+/* =========================
+   EMPTY DASHBOARD STATE
+========================= */
+.empty-dashboard-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 60px 30px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(2, 6, 23, 0.9) 100%);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 72px;
+  margin-bottom: 24px;
+  animation: emptyIconPulse 3s ease-in-out infinite;
+}
+
+@keyframes emptyIconPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+.empty-state-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #64c8ff;
+  margin: 0 0 12px 0;
+  letter-spacing: 1px;
+}
+
+.empty-state-message {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 32px 0;
+  max-width: 400px;
+}
+
+.empty-state-message strong {
+  color: #3b82f6;
+}
+
+.empty-state-features {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.empty-state-features .feature-item {
+  padding: 12px 20px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(100, 200, 255, 0.2);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.empty-state-features .feature-item:hover {
+  border-color: rgba(100, 200, 255, 0.5);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Orange color for history mode */
+.orange {
+  color: #f59e0b;
 }

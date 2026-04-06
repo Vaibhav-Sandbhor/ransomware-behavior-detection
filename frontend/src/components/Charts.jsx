@@ -20,7 +20,7 @@ const COLORS = {
   honeypot: "#3b82f6"
 };
 
-function Charts({ moduleData, timelineData, setTimelineData }) {
+function Charts({ moduleData, timelineData, setTimelineData, viewMode = "live" }) {
   // ✅ SINGLE SOURCE OF TRUTH - From moduleData (SAME as summary cards)
   const currentRansomware = moduleData?.ransomware?.count || 0;
   const currentPortScan = moduleData?.portscan?.count || 0;
@@ -28,12 +28,18 @@ function Charts({ moduleData, timelineData, setTimelineData }) {
 
   const [hasScanned, setHasScanned] = useState(false);
 
-  // ✅ UPDATE TIMELINE WHEN MODULE DATA CHANGES (use prop-based state)
+  // ✅ UPDATE TIMELINE WHEN MODULE DATA CHANGES (ONLY IN LIVE MODE)
   useEffect(() => {
     // Check if we have data
     const hasData = currentRansomware > 0 || currentPortScan > 0 || currentHoneypot > 0;
     if (hasData) {
       setHasScanned(true);
+    }
+
+    // ✅ ONLY update timeline in LIVE mode - NEVER in history mode
+    if (viewMode !== "live") {
+      console.log("📊 [Charts] Skipping timeline update - in history mode");
+      return;
     }
 
     // ✅ APPEND CURRENT VALUES TO TIMELINE (persists across navigation)
@@ -71,7 +77,7 @@ function Charts({ moduleData, timelineData, setTimelineData }) {
       return updated;
     });
 
-  }, [currentRansomware, currentPortScan, currentHoneypot, setTimelineData]);
+  }, [currentRansomware, currentPortScan, currentHoneypot, setTimelineData, viewMode]);
 
   const total = currentRansomware + currentPortScan + currentHoneypot;
   const hasData = total > 0;
@@ -209,14 +215,14 @@ function Charts({ moduleData, timelineData, setTimelineData }) {
         </div>
       )}
 
-      {/* ROW 2: TWO SEPARATE TIMELINE GRAPHS - SIDE BY SIDE */}
+      {/* ROW 2: THREE SEPARATE TIMELINE GRAPHS - STACKED VERTICALLY */}
       {hasScanned && timelineData.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
 
-          {/* LEFT: HONEYPOT TIMELINE */}
+          {/* RANSOMWARE TIMELINE - RED */}
           <div className="ml-card">
-            <div className="ml-card-header">Honeypot Activity Timeline</div>
-            <ResponsiveContainer width="100%" height={280}>
+            <div className="ml-card-header">🔒 Ransomware Activity Timeline</div>
+            <ResponsiveContainer width="100%" height={200}>
               <LineChart data={timelineData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                 <XAxis
                   dataKey="time"
@@ -224,93 +230,105 @@ function Charts({ moduleData, timelineData, setTimelineData }) {
                   tick={{ fontSize: 10 }}
                   interval={Math.max(0, Math.floor(timelineData.length / 6))}
                 />
-                <YAxis stroke="#666" tick={{ fontSize: 11 }} />
+                <YAxis stroke="#666" tick={{ fontSize: 11 }} domain={[0, 'auto']} />
                 <Tooltip
-                  contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: "4px" }}
-                  formatter={(value) => [`${value} events`, "Honeypot"]}
+                  contentStyle={{ background: "#0a0a0a", border: "1px solid #333", borderRadius: "4px" }}
+                  formatter={(value) => [`${value} events`, "Ransomware"]}
                 />
-                <Legend wrapperStyle={{ paddingTop: "10px" }} />
-
-                {/* ✅ HONEYPOT ONLY - BLUE */}
-                <Line
-                  type="linear"
-                  dataKey="honeypot"
-                  stroke={COLORS.honeypot}
-                  strokeWidth={3}
-                  dot={{ fill: COLORS.honeypot, r: 6, strokeWidth: 2, stroke: "#fff" }}
-                  activeDot={{ r: 8 }}
-                  name="Honeypot"
-                  isAnimationActive={true}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-            <div style={{ marginTop: "8px", fontSize: "10px", color: "#888", textAlign: "center" }}>
-              Current: {currentHoneypot} events
-            </div>
-          </div>
-
-          {/* RIGHT: RANSOMWARE + PORT SCAN TIMELINE */}
-          <div className="ml-card">
-            <div className="ml-card-header">Ransomware & Port Scan Timeline</div>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={timelineData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-                <XAxis
-                  dataKey="time"
-                  stroke="#666"
-                  tick={{ fontSize: 10 }}
-                  interval={Math.max(0, Math.floor(timelineData.length / 6))}
-                />
-                <YAxis stroke="#666" tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ background: "#1a1a2e", border: "1px solid #333", borderRadius: "4px" }}
-                  formatter={(value, name) => {
-                    const names = {
-                      ransomware: "Ransomware",
-                      port_scan: "Port Scans"
-                    };
-                    return [`${value} events`, names[name] || name];
-                  }}
-                />
-                <Legend wrapperStyle={{ paddingTop: "10px" }} />
-
-                {/* ✅ RANSOMWARE - RED */}
                 <Line
                   type="linear"
                   dataKey="ransomware"
                   stroke={COLORS.ransomware}
                   strokeWidth={3}
-                  dot={{ fill: COLORS.ransomware, r: 6, strokeWidth: 2, stroke: "#fff" }}
-                  activeDot={{ r: 8 }}
+                  dot={{ fill: COLORS.ransomware, r: 5, strokeWidth: 2, stroke: "#fff" }}
+                  activeDot={{ r: 7 }}
                   name="Ransomware"
                   isAnimationActive={true}
                 />
+              </LineChart>
+            </ResponsiveContainer>
+            <div style={{ marginTop: "6px", fontSize: "11px", color: "#888", textAlign: "center" }}>
+              Current: <span style={{ color: COLORS.ransomware, fontWeight: 600 }}>{currentRansomware}</span> ransomware events
+            </div>
+          </div>
 
-                {/* ✅ PORT SCAN - YELLOW */}
+          {/* PORT SCAN TIMELINE - ORANGE/YELLOW */}
+          <div className="ml-card">
+            <div className="ml-card-header">🌐 Port Scan Activity Timeline</div>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={timelineData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                <XAxis
+                  dataKey="time"
+                  stroke="#666"
+                  tick={{ fontSize: 10 }}
+                  interval={Math.max(0, Math.floor(timelineData.length / 6))}
+                />
+                <YAxis stroke="#666" tick={{ fontSize: 11 }} domain={[0, 'auto']} />
+                <Tooltip
+                  contentStyle={{ background: "#0a0a0a", border: "1px solid #333", borderRadius: "4px" }}
+                  formatter={(value) => [`${value} ports`, "Port Scan"]}
+                />
                 <Line
                   type="linear"
                   dataKey="port_scan"
                   stroke={COLORS.port_scan}
                   strokeWidth={3}
-                  dot={{ fill: COLORS.port_scan, r: 6, strokeWidth: 2, stroke: "#fff" }}
-                  activeDot={{ r: 8 }}
+                  dot={{ fill: COLORS.port_scan, r: 5, strokeWidth: 2, stroke: "#fff" }}
+                  activeDot={{ r: 7 }}
                   name="Port Scans"
                   isAnimationActive={true}
                 />
               </LineChart>
             </ResponsiveContainer>
-            <div style={{ marginTop: "8px", fontSize: "10px", color: "#888", textAlign: "center" }}>
-              Current: Ransomware={currentRansomware}, Ports={currentPortScan}
+            <div style={{ marginTop: "6px", fontSize: "11px", color: "#888", textAlign: "center" }}>
+              Current: <span style={{ color: COLORS.port_scan, fontWeight: 600 }}>{currentPortScan}</span> ports scanned
             </div>
           </div>
+
+          {/* HONEYPOT TIMELINE - BLUE */}
+          <div className="ml-card">
+            <div className="ml-card-header">🍯 Honeypot Activity Timeline</div>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={timelineData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                <XAxis
+                  dataKey="time"
+                  stroke="#666"
+                  tick={{ fontSize: 10 }}
+                  interval={Math.max(0, Math.floor(timelineData.length / 6))}
+                />
+                <YAxis stroke="#666" tick={{ fontSize: 11 }} domain={[0, 'auto']} />
+                <Tooltip
+                  contentStyle={{ background: "#0a0a0a", border: "1px solid #333", borderRadius: "4px" }}
+                  formatter={(value) => [`${value} events`, "Honeypot"]}
+                />
+                <Line
+                  type="linear"
+                  dataKey="honeypot"
+                  stroke={COLORS.honeypot}
+                  strokeWidth={3}
+                  dot={{ fill: COLORS.honeypot, r: 5, strokeWidth: 2, stroke: "#fff" }}
+                  activeDot={{ r: 7 }}
+                  name="Honeypot"
+                  isAnimationActive={true}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+            <div style={{ marginTop: "6px", fontSize: "11px", color: "#888", textAlign: "center" }}>
+              Current: <span style={{ color: COLORS.honeypot, fontWeight: 600 }}>{currentHoneypot}</span> honeypot events
+            </div>
+          </div>
+
         </div>
       )}
 
       {/* ROW 3: LIVE SECURITY EVENT FEED - REMOVED (use AlertsPanel instead) */}
 
       <div className="ml-footer">
-        Status: <b>{hasScanned ? "Active" : "Waiting"}</b>
+        Status: <b>{viewMode === "history" ? "Viewing History" : (hasScanned ? "Active" : "Waiting")}</b>
         <span style={{ marginLeft: "12px", color: "#666" }}>
-          ✓ Real-time data • ✓ Synced with Summary Cards
+          {viewMode === "live" 
+            ? "✓ Real-time data • ✓ Synced with Summary Cards" 
+            : "📜 Historical snapshot data"}
         </span>
       </div>
     </section>
