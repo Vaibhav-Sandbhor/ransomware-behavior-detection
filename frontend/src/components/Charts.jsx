@@ -20,7 +20,15 @@ const COLORS = {
   honeypot: "#3b82f6"
 };
 
-function Charts({ moduleData, timelineData, setTimelineData, viewMode = "live" }) {
+// Severity colors for breakdown chart
+const SEVERITY_COLORS = {
+  CRITICAL: "#ff4d4f",
+  HIGH: "#fa8c16",
+  MEDIUM: "#fadb14",
+  LOW: "#52c41a"
+};
+
+function Charts({ moduleData, timelineData, setTimelineData, viewMode = "live", alerts = [] }) {
   // ✅ SINGLE SOURCE OF TRUTH - From moduleData (SAME as summary cards)
   const currentRansomware = moduleData?.ransomware?.count || 0;
   const currentPortScan = moduleData?.portscan?.count || 0;
@@ -188,29 +196,98 @@ function Charts({ moduleData, timelineData, setTimelineData, viewMode = "live" }
             </div>
           </div>
 
-          {/* TOTAL ACTIVITY BAR */}
+          {/* THREAT SEVERITY BREAKDOWN CHART */}
           <div className="ml-card">
-            <div className="ml-card-header">Total Threat Activity</div>
-            {timelineData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={[{ name: "Total", value: total }]}>
-                  <XAxis dataKey="name" stroke="#666" />
-                  <YAxis stroke="#666" tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ background: "#1a1a2e", border: "1px solid #333" }} />
-                  <Bar dataKey="value" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{
-                height: 200,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#666"
-              }}>
-                Loading...
-              </div>
-            )}
+            <div className="ml-card-header">Threat Severity Breakdown</div>
+            {(() => {
+              // Compute severity counts from alerts (handle both uppercase and lowercase)
+              const severityCounts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+              alerts.forEach(alert => {
+                const sev = (alert.severity || "").toUpperCase();
+                if (severityCounts[sev] !== undefined) {
+                  severityCounts[sev]++;
+                }
+              });
+              
+              console.log("[Charts] Alerts count:", alerts.length, "Severity counts:", severityCounts);
+              
+              const totalAlerts = Object.values(severityCounts).reduce((a, b) => a + b, 0);
+              
+              const severityData = [
+                { name: "Critical", value: severityCounts.CRITICAL, fill: SEVERITY_COLORS.CRITICAL },
+                { name: "High", value: severityCounts.HIGH, fill: SEVERITY_COLORS.HIGH },
+                { name: "Medium", value: severityCounts.MEDIUM, fill: SEVERITY_COLORS.MEDIUM },
+                { name: "Low", value: severityCounts.LOW, fill: SEVERITY_COLORS.LOW }
+              ];
+              
+              const hasSeverityData = totalAlerts > 0;
+              
+              return hasSeverityData ? (
+                <>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={severityData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                      <XAxis 
+                        dataKey="name" 
+                        stroke="#666" 
+                        tick={{ fontSize: 11 }}
+                      />
+                      <YAxis 
+                        stroke="#666" 
+                        tick={{ fontSize: 11 }}
+                        allowDecimals={false}
+                      />
+                      <Tooltip 
+                        contentStyle={{ background: "#0a0a0a", border: "1px solid #333", borderRadius: "4px" }}
+                        formatter={(value, name, props) => {
+                          const pct = totalAlerts > 0 ? ((value / totalAlerts) * 100).toFixed(1) : 0;
+                          return [`${value} alerts (${pct}%)`, props.payload.name];
+                        }}
+                      />
+                      <Bar 
+                        dataKey="value" 
+                        radius={[6, 6, 0, 0]}
+                        isAnimationActive={true}
+                      >
+                        {severityData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div style={{
+                    marginTop: "16px",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: "8px",
+                    fontSize: "11px"
+                  }}>
+                    {severityData.map(item => (
+                      <div key={item.name} style={{ 
+                        textAlign: "center", 
+                        padding: "8px 6px", 
+                        background: "#1a1a2e", 
+                        borderRadius: "4px",
+                        borderLeft: `3px solid ${item.fill}`
+                      }}>
+                        <div style={{ color: item.fill, fontWeight: 600, fontSize: "12px" }}>{item.name}</div>
+                        <div style={{ color: "#aaa", marginTop: "4px" }}>{item.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div style={{
+                  height: 200,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#666",
+                  fontSize: "14px"
+                }}>
+                  No alerts to display
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

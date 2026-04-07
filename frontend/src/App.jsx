@@ -13,6 +13,7 @@ import Register from "./pages/Register.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
 import HistoryViewer from "./pages/HistoryViewer.jsx";
 import SessionHistory from "./pages/SessionHistory.jsx";
+import Profile from "./pages/Profile.jsx";
 import PortScanDetails from "./pages/details/PortScanDetails.jsx";
 import HoneypotDetails from "./pages/details/HoneypotDetails.jsx";
 import DarkWebDetails from "./pages/details/DarkWebDetails.jsx";
@@ -416,6 +417,8 @@ function AppContent() {
     // Set history timeline data (if available from the snapshot)
     setHistoryTimelineData(timelinePoints);
     console.log("[switchToHistoryMode] Switched to history mode, live data preserved");
+    console.log("[switchToHistoryMode] Snapshot portscan count:", snapshot?.portscan?.count);
+    console.log("[switchToHistoryMode] Full snapshot:", snapshot);
   }, [stopAutoScan]);
 
   // ✅ Switch back to live mode - NEVER resets live data
@@ -478,6 +481,16 @@ function AppContent() {
                     onSelectSession={switchToHistoryMode}
                     onBackToLive={switchToLiveMode}
                   />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Profile Page */}
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

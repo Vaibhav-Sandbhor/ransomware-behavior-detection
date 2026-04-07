@@ -33,10 +33,57 @@ export const loginUser = async (email, password) => {
 };
 
 export const getCurrentUser = async () => {
-  const response = await fetch(`${API_BASE}/auth/me`, {
-    method: "GET",
+  try {
+    const response = await fetch(`${API_BASE}/auth/me`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to get user");
+    }
+    return response.json();
+  } catch (err) {
+    console.error("getCurrentUser error:", err);
+    throw err;
+  }
+};
+
+/**
+ * Update user profile (name and/or role).
+ * @param {Object} profileData - { name?: string, role?: string }
+ */
+export const updateProfile = async (profileData) => {
+  const response = await fetch(`${API_BASE}/auth/profile`, {
+    method: "PUT",
     headers: getAuthHeaders(),
+    body: JSON.stringify(profileData),
   });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to update profile");
+  }
+  return response.json();
+};
+
+/**
+ * Change user password.
+ * @param {string} currentPassword - Current password
+ * @param {string} newPassword - New password (min 6 chars)
+ */
+export const changePassword = async (currentPassword, newPassword) => {
+  const response = await fetch(`${API_BASE}/auth/password`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to change password");
+  }
   return response.json();
 };
 

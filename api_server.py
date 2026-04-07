@@ -69,13 +69,41 @@ class User(Base):
     name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     password = Column(String(255), nullable=False)
+    role = Column(String(50), default="Analyst")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_login = Column(DateTime(timezone=True), nullable=True)
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name})>"
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+# Run migrations for existing databases
+def run_migrations():
+    """Add new columns to existing users table."""
+    import sqlite3
+    conn = sqlite3.connect("./cybersiem_auth.db")
+    cursor = conn.cursor()
+    
+    # Check and add role column
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'Analyst'")
+        logger.info("✅ Added 'role' column to users table")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    # Check and add last_login column
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN last_login TIMESTAMP")
+        logger.info("✅ Added 'last_login' column to users table")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    
+    conn.commit()
+    conn.close()
+
+run_migrations()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Pydantic Schemas for Auth
@@ -97,6 +125,9 @@ class UserResponse(BaseModel):
     id: int
     name: str
     email: str
+    role: str = "Analyst"
+    created_at: datetime = None
+    last_login: datetime = None
 
     class Config:
         from_attributes = True
@@ -343,6 +374,10 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
             detail="Invalid email or password",
         )
 
+    # Update last_login timestamp
+    user.last_login = datetime.now(timezone.utc)
+    db.commit()
+
     # Create JWT token
     access_token = JWTTokenManager.create_access_token(data={"sub": user.email})
 
@@ -363,6 +398,81 @@ def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends
             detail="User not found",
         )
     return UserResponse.from_orm(user)
+
+
+# Pydantic schemas for profile updates
+class UpdateProfileRequest(BaseModel):
+    """Schema for updating user profile."""
+    name: str = None
+    role: str = None
+
+class ChangePasswordRequest(BaseModel):
+    """Schema for changing password."""
+    current_password: str
+    new_password: str
+
+
+@app.put("/auth/profile", response_model=UserResponse, tags=["Authentication"])
+def update_profile(
+    profile_data: UpdateProfileRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update user profile (name and role)."""
+    user = db.query(User).filter(User.email == current_user.get("sub")).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    
+    # Update fields if provided
+    if profile_data.name:
+        user.name = profile_data.name
+    if profile_data.role:
+        user.role = profile_data.role
+    
+    db.commit()
+    db.refresh(user)
+    
+    logger.info(f"✅ Profile updated for user: {user.email}")
+    return UserResponse.from_orm(user)
+
+
+@app.put("/auth/password", tags=["Authentication"])
+def change_password(
+    password_data: ChangePasswordRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Change user password."""
+    user = db.query(User).filter(User.email == current_user.get("sub")).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    
+    # Verify current password
+    if not PasswordManager.verify_password(password_data.current_password, user.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+    
+    # Validate new password
+    if len(password_data.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be at least 6 characters",
+        )
+    
+    # Update password
+    user.password = PasswordManager.hash_password(password_data.new_password)
+    db.commit()
+    
+    logger.info(f"✅ Password changed for user: {user.email}")
+    return {"message": "Password changed successfully"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

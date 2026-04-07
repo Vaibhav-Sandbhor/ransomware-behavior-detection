@@ -82,6 +82,7 @@ function Dashboard({ moduleData, updateModuleData, alerts, setAlerts, scanFuncti
         timelineData={timelineData} 
         setTimelineData={setTimelineData} 
         viewMode={viewMode}
+        alerts={alerts}
       />
       <ThreatTable />
 

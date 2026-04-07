@@ -503,7 +503,7 @@ body {
   border: 1px solid var(--border-soft);
   border-radius: 14px;
   padding: 14px;
-  height: 260px;               /* 🔥 equal height */
+  min-height: 320px;            /* 🔥 increased height for better spacing */
   display: flex;
   flex-direction: column;
 }

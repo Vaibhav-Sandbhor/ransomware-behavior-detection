@@ -49,6 +49,10 @@ function SessionHistory({ onSelectSession, onBackToLive }) {
     if (sessionDetail?.final_snapshot?.snapshot_data) {
       // Convert snapshot data to moduleData format for dashboard
       const snapshot = sessionDetail.final_snapshot.snapshot_data;
+      
+      // Debug log to verify port data
+      console.log("[SessionHistory] Raw snapshot ports:", snapshot.ports);
+      console.log("[SessionHistory] Port count:", snapshot.ports?.length || 0);
       const moduleData = {
         ransomware: {
           count: snapshot.ransomware?.ransomware || 0,
@@ -88,7 +92,8 @@ function SessionHistory({ onSelectSession, onBackToLive }) {
       };
 
       // Convert timeline snapshots to timeline data points for charts
-      const timelinePoints = (sessionDetail.timeline || []).map(t => {
+      // Backend returns timeline_snapshots, not timeline
+      const timelinePoints = (sessionDetail.timeline_snapshots || []).map(t => {
         const data = t.snapshot_data || {};
         return {
           time: new Date(t.timestamp).toLocaleTimeString(),
@@ -100,6 +105,8 @@ function SessionHistory({ onSelectSession, onBackToLive }) {
         };
       });
 
+      console.log("[SessionHistory] moduleData to send:", moduleData);
+      console.log("[SessionHistory] moduleData.portscan.count:", moduleData.portscan.count);
       onSelectSession(moduleData, timelinePoints);
       navigate("/");
     }
