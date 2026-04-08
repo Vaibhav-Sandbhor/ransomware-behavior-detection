@@ -87,11 +87,33 @@ body {
   color: white;
 }
 
-/* Sidebar Footer (Logout Button) */
+/* Sidebar Footer (Profile & Logout) */
 .sidebar-footer {
   margin-top: auto;
   padding-top: 20px;
   border-top: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-footer-link {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: 0.2s;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.1) 0%, rgba(100, 200, 255, 0.05) 100%);
+  border: 1px solid rgba(100, 200, 255, 0.2);
+  font-weight: 600;
+}
+
+.sidebar-footer-link:hover {
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.2) 0%, rgba(100, 200, 255, 0.1) 100%);
+  color: white;
+  border-color: #64c8ff;
 }
 
 .logout-btn {
@@ -105,6 +127,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-align: center;
 }
 
 .logout-btn:hover {

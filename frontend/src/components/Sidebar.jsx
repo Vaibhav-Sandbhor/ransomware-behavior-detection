@@ -18,11 +18,13 @@ function Sidebar() {
         <li><Link to="/">Dashboard</Link></li>
         <li className="divider"></li>
         <li className="history-item"><Link to="/sessions">📊 Sessions</Link></li>
-        <li><Link to="/profile">👤 Profile</Link></li>
       </ul>
-      
-      {/* Logout Button at Bottom */}
+
+      {/* Profile & Logout at Bottom */}
       <div className="sidebar-footer">
+        <Link to="/profile" className="sidebar-footer-link">
+          👤 Profile
+        </Link>
         <button className="logout-btn" onClick={handleLogout}>
           🚪 Logout
         </button>
