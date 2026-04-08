@@ -796,6 +796,30 @@ body {
   border-radius: 50%;
   border: 2px solid var(--border-soft);
 }
+
+/* USER AVATAR WITH INITIAL */
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1f2a40 0%, #2a3d55 100%);
+  border: 2px solid var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-avatar:hover {
+  border-color: #64c8ff;
+  box-shadow: 0 0 12px rgba(100, 200, 255, 0.4);
+  background: linear-gradient(135deg, #2a3d55 0%, #1f2a40 100%);
+}
+
 @media (max-width: 768px) {
   .topbar-center {
     display: none; /* hide welcome text on mobile */
