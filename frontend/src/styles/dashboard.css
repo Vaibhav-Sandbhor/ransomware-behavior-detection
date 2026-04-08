@@ -50,7 +50,7 @@ body {
 .sidebar {
   background: #020617;
   border-right: 1px solid var(--border-soft);
-  padding: 20px;
+  padding: 20px 20px;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -93,8 +93,8 @@ body {
 /* Sidebar Footer (Profile & Logout) */
 .sidebar-footer {
   margin-top: auto;
-  padding-top: 25px;
-  padding-bottom: 10px;
+  padding-top: 16px;
+  padding-bottom: 0;
   border-top: 2px solid var(--border-soft);
   display: flex;
   flex-direction: column;
