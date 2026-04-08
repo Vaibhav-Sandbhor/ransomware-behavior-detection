@@ -13,15 +13,18 @@ function Sidebar() {
 
   return (
     <aside className="sidebar">
-      <h2 className="logo">CyberSIEM</h2>
-      <ul>
-        <li><Link to="/">Dashboard</Link></li>
-        <li className="divider"></li>
-        <li className="history-item"><Link to="/sessions">📊 Sessions</Link></li>
-      </ul>
+      {/* TOP SECTION - Scrollable */}
+      <div className="sidebar-top">
+        <h2 className="logo">CyberSIEM</h2>
+        <ul>
+          <li><Link to="/">Dashboard</Link></li>
+          <li className="divider"></li>
+          <li className="history-item"><Link to="/sessions">📊 Sessions</Link></li>
+        </ul>
+      </div>
 
-      {/* Profile & Logout at Bottom */}
-      <div className="sidebar-footer">
+      {/* BOTTOM SECTION - Fixed, Always Visible */}
+      <div className="sidebar-bottom">
         <Link to="/profile" className="sidebar-footer-link">
           👤 Profile
         </Link>

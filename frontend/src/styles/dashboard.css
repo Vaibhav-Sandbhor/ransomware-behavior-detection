@@ -47,14 +47,23 @@ body {
 /* =========================
    SIDEBAR
 ========================= */
+/* =========================
+   SIDEBAR
+========================= */
 .sidebar {
   background: #020617;
   border-right: 1px solid var(--border-soft);
-  padding: 20px 20px;
   display: flex;
   flex-direction: column;
   height: 100vh;
-  gap: 0;
+  overflow: hidden;
+}
+
+/* TOP SECTION - Scrollable */
+.sidebar-top {
+  padding: 20px;
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
 .logo {
@@ -66,7 +75,6 @@ body {
 
 .sidebar ul {
   padding: 0;
-  flex: 1;
   margin: 0;
 }
 
@@ -90,15 +98,36 @@ body {
   color: white;
 }
 
-/* Sidebar Footer (Profile & Logout) */
-.sidebar-footer {
-  margin-top: auto;
-  padding-top: 16px;
-  padding-bottom: 0;
+/* History Menu Item */
+.sidebar li.divider {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 15px 0;
+}
+
+.sidebar li.history-item a {
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.1) 0%, rgba(100, 200, 255, 0.05) 100%);
+  border: 1px solid rgba(100, 200, 255, 0.2);
+  color: #64c8ff;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.sidebar li.history-item a:hover {
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.2) 0%, rgba(100, 200, 255, 0.1) 100%);
+  border-color: #64c8ff;
+  color: white;
+  box-shadow: 0 4px 12px rgba(100, 200, 255, 0.2);
+}
+
+/* BOTTOM SECTION - Fixed, Always Visible */
+.sidebar-bottom {
+  padding: 12px 20px 20px 20px;
   border-top: 2px solid var(--border-soft);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .sidebar-footer-link {
@@ -142,28 +171,6 @@ body {
   border-color: #ef4444;
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
   transform: translateY(-2px);
-}
-
-/* History Menu Item */
-.sidebar li.divider {
-  height: 1px;
-  background: var(--border-soft);
-  margin: 15px 0;
-}
-
-.sidebar li.history-item a {
-  background: linear-gradient(135deg, rgba(100, 200, 255, 0.1) 0%, rgba(100, 200, 255, 0.05) 100%);
-  border: 1px solid rgba(100, 200, 255, 0.2);
-  color: #64c8ff;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.sidebar li.history-item a:hover {
-  background: linear-gradient(135deg, rgba(100, 200, 255, 0.2) 0%, rgba(100, 200, 255, 0.1) 100%);
-  border-color: #64c8ff;
-  color: white;
-  box-shadow: 0 4px 12px rgba(100, 200, 255, 0.2);
 }
 
 /* =========================
