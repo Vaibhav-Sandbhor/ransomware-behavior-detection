@@ -1,6 +1,6 @@
 """Session management for CyberSIEM scan sessions."""
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from database.db_manager import execute_update, execute_query
 
 logger = logging.getLogger(__name__)
@@ -22,9 +22,10 @@ def start_session():
 def end_session(session_id):
     """End a scan session."""
     try:
+        utc_time = datetime.now(timezone.utc).isoformat()
         execute_update(
-            "UPDATE scan_sessions SET status = 'COMPLETED', end_time = CURRENT_TIMESTAMP WHERE id = ?",
-            (session_id,)
+            "UPDATE scan_sessions SET status = 'COMPLETED', end_time = ? WHERE id = ?",
+            (utc_time, session_id)
         )
         logger.info(f"✅ Ended scan session: {session_id}")
     except Exception as e:

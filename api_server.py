@@ -1047,7 +1047,7 @@ def run_ransomware_pipeline(current_user: dict = Depends(get_current_user)):
         with open(live_input, newline="", encoding="utf-8") as f:
             for row in csv.DictReader(f):
                 result  = det.predict_dict(row)
-                ts      = row.get("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                ts      = row.get("timestamp", datetime.now(timezone.utc).isoformat())
                 proc    = row.get("process_name", "unknown")
                 conf    = round(float(result["confidence"]), 4)
                 threat  = result["threat_level"]
@@ -1252,7 +1252,7 @@ def _run_predictions(source="SIMULATION"):
                     break
 
                 result = det.predict_dict(row)
-                ts = row.get("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                ts = row.get("timestamp", datetime.now(timezone.utc).isoformat())
                 proc = row.get("process_name", "unknown")
                 conf = round(float(result["confidence"]), 4)
                 threat = result["threat_level"]
@@ -1466,7 +1466,7 @@ def _run_honeypot_monitor_pipeline():
         logger.info(f"Created honeypot decoys in: {decoy_dir}")
 
         # Run monitoring with 60-second timeout
-        start_time = datetime.now()
+        start_time = datetime.now(timezone.utc)
         duration = 60  # seconds
 
         try:
@@ -1495,7 +1495,7 @@ def _run_honeypot_monitor_pipeline():
             logger.info(f"Real honeypot monitor active on {decoy_dir}")
 
             # Monitor for 60 seconds or until stop requested
-            while (datetime.now() - start_time).total_seconds() < duration:
+            while (datetime.now(timezone.utc) - start_time).total_seconds() < duration:
                 if _honeypot_scan_stop_requested:
                     logger.info("Honeypot monitor stopped by user")
                     break
@@ -1539,7 +1539,7 @@ def start_scan_simulation(current_user: dict = Depends(get_current_user)):
         # Start simulation thread
         _current_scan_mode = "simulation"
         _scan_active = True
-        _scan_start_time = datetime.now()
+        _scan_start_time = datetime.now(timezone.utc)
         _scan_stop_requested = False
 
         thread = threading.Thread(
@@ -1552,7 +1552,7 @@ def start_scan_simulation(current_user: dict = Depends(get_current_user)):
     return {
         "status": "started",
         "mode": "simulation",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -1571,7 +1571,7 @@ def start_scan_system(current_user: dict = Depends(get_current_user)):
         # Startystem monitoring thread
         _current_scan_mode = "system"
         _scan_active = True
-        _scan_start_time = datetime.now()
+        _scan_start_time = datetime.now(timezone.utc)
         _scan_stop_requested = False
 
         thread = threading.Thread(
@@ -1584,7 +1584,7 @@ def start_scan_system(current_user: dict = Depends(get_current_user)):
     return {
         "status": "started",
         "mode": "system",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -1614,7 +1614,7 @@ def scan_status():
     with _scan_lock:
         duration = None
         if _scan_start_time:
-            duration = (datetime.now() - _scan_start_time).total_seconds()
+            duration = (datetime.now(timezone.utc) - _scan_start_time).total_seconds()
 
         return {
             "active": _scan_active,
@@ -1653,7 +1653,7 @@ def start_honeypot_simulation(current_user: dict = Depends(get_current_user)):
         # Start simulation thread
         _honeypot_scan_mode = "simulation"
         _honeypot_scan_active = True
-        _honeypot_scan_start_time = datetime.now()
+        _honeypot_scan_start_time = datetime.now(timezone.utc)
         _honeypot_scan_stop_requested = False
 
         thread = threading.Thread(
@@ -1666,7 +1666,7 @@ def start_honeypot_simulation(current_user: dict = Depends(get_current_user)):
     return {
         "status": "started",
         "mode": "simulation",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -1686,7 +1686,7 @@ def start_honeypot_monitor(current_user: dict = Depends(get_current_user)):
         # Start monitoring thread
         _honeypot_scan_mode = "monitor"
         _honeypot_scan_active = True
-        _honeypot_scan_start_time = datetime.now()
+        _honeypot_scan_start_time = datetime.now(timezone.utc)
         _honeypot_scan_stop_requested = False
 
         thread = threading.Thread(
@@ -1699,7 +1699,7 @@ def start_honeypot_monitor(current_user: dict = Depends(get_current_user)):
     return {
         "status": "started",
         "mode": "monitor",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -1729,7 +1729,7 @@ def honeypot_scan_status(current_user: dict = Depends(get_current_user)):
     with _scan_lock:
         duration = None
         if _honeypot_scan_start_time:
-            duration = (datetime.now() - _honeypot_scan_start_time).total_seconds()
+            duration = (datetime.now(timezone.utc) - _honeypot_scan_start_time).total_seconds()
 
         return {
             "active": _honeypot_scan_active,
@@ -1890,7 +1890,7 @@ def portscan_localhost(current_user: dict = Depends(get_current_user)):
         return {
             "status":     "success",
             "host":       "127.0.0.1",
-            "scan_time":  datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "scan_time":  datetime.now(timezone.utc).isoformat(),
             "total":      len(ports),
             "high":       high,
             "medium":     medium,
@@ -1922,7 +1922,7 @@ def get_security_metrics(current_user: dict = Depends(get_current_user)):
     """
     try:
         metrics = {
-            "timestamp": datetime.now().strftime("%H:%M:%S"),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "ransomware": 0,
             "port_scan": 0,
             "honeypot": 0,
@@ -1964,7 +1964,7 @@ def get_security_metrics(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Error in get_security_metrics: {e}")
         return {
-            "timestamp": datetime.now().strftime("%H:%M:%S"),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "ransomware": 0,
             "port_scan": 0,
             "honeypot": 0,
